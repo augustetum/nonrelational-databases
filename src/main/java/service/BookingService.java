@@ -39,7 +39,7 @@ public class BookingService {
     public Booking documentToBooking(Document doc) {
         Booking booking = new Booking();
         booking.setId(doc.getString("_id"));
-        booking.setTime(doc.getString("time"));
+        booking.setTime(doc.getDate("time"));
         booking.setAddress(doc.getString("address"));
         booking.setDetails(doc.getString("details"));
 

@@ -19,8 +19,6 @@ public class MongoDbContext {
     public final MongoCollection<Document> freelancers;
 
     public MongoDbContext(@Value("${spring.data.mongodb.uri}") String uri, @Value("${spring.data.mongodb.database}") String dbName) {
-        System.out.println("ctx initialized");
-
         this.client = MongoClients.create(uri);
         this.database = client.getDatabase(dbName);
 
@@ -32,6 +30,5 @@ public class MongoDbContext {
     @PreDestroy
     public void close() {
         client.close();
-        System.out.println("ctx destroyed");
     }
 }

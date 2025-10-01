@@ -8,10 +8,10 @@ import config.MongoDbContext;
 import entity.Booking;
 
 @Repository
-public class BookingsRepository {
+public class BookingRepository {
     private final MongoDbContext dbContext;
 
-    public BookingsRepository(MongoDbContext dbContext) {
+    public BookingRepository(MongoDbContext dbContext) {
         this.dbContext = dbContext;
     }
 

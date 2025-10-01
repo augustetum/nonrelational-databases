@@ -1,15 +1,15 @@
 package service;
 
 import entity.Booking;
-import repository.BookingsRepository;
+import repository.BookingRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
 public class BookingService {
-    private final BookingsRepository repository;
+    private final BookingRepository repository;
 
-    public BookingService(BookingsRepository repository) {
+    public BookingService(BookingRepository repository) {
         this.repository = repository;
     }
 

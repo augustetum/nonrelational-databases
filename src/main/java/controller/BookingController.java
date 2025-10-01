@@ -1,4 +1,4 @@
-package Controller;
+package controller;
 
 import entity.Booking;
 import service.BookingService;
@@ -11,14 +11,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/bookings")
-public class BookingsController {
+public class BookingController {
 
     @Autowired
     private BookingService bookingService;
 
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
-            List<Booking> bookings = bookingService.getAllBookings();
-            return ResponseEntity.ok(bookings);
+        List<Booking> bookings = bookingService.getAllBookings();
+        return ResponseEntity.ok(bookings);
     }
 }

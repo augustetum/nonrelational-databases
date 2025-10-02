@@ -15,7 +15,7 @@ public class ReviewService {
     }
 
     public List<Review> getByRevieweeId(String revieweeId) {
-        return repository.getByRevieweeId(revieweeId);
+        return repository.get(revieweeId);
     }
 
     public void addReview(NewReviewDto dto) {

@@ -21,7 +21,7 @@ public class ReviewRepository {
         this.dbContext = dbContext;
     }
 
-    public List<Review> getByRevieweeId(String revieweeId) {
+    public List<Review> get(String revieweeId) {
         Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
         Bson projections = Projections.include("reviews");
 

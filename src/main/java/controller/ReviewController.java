@@ -20,8 +20,8 @@ public class ReviewController {
     private ReviewService reviewService;
 
     @GetMapping
-    public ResponseEntity<List<Review>> getByRevieweeId(String id) {
-        List<Review> reviews = reviewService.getByRevieweeId(id);
+    public ResponseEntity<List<Review>> getByRevieweeId(String revieweeId) {
+        List<Review> reviews = reviewService.getByRevieweeId(revieweeId);
         return ResponseEntity.ok(reviews);
     }
 

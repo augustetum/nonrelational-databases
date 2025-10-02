@@ -9,7 +9,8 @@ import lombok.Data;
 public class Review {
     @BsonId
     @BsonRepresentation(BsonType.OBJECT_ID)
-    private String id;
-    private double stars;
-    private String details;
+    public String id;
+    public double rating;
+    public String details;
+    public String authorId;
 }

@@ -2,6 +2,7 @@ package service;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
+import dto.NewReviewDto;
 import entity.Review;
 import repository.ReviewRepository;
 
@@ -15,5 +16,15 @@ public class ReviewService {
 
     public List<Review> getByRevieweeId(String id) {
         return repository.getByRevieweeId(id);
+    }
+
+    public void addReview(NewReviewDto dto) {
+        Review review = new Review();
+
+        review.setRating(dto.rating);
+        review.setDetails(dto.details);
+        review.setAuthorId(dto.authorId);
+
+        repository.add(dto.revieweeId, review);
     }
 }

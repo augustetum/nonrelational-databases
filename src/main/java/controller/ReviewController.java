@@ -3,13 +3,16 @@ package controller;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import dto.CreateReviewRequestDto;
-import dto.NewReviewDto;
+import dto.AddReviewRequestDto;
+import dto.RemoveReviewDto;
+import dto.RemoveReviewRequestDto;
+import dto.AddReviewDto;
 import entity.Review;
 import service.ReviewService;
 
@@ -26,14 +29,24 @@ public class ReviewController {
     }
 
     @PostMapping
-    public void addReview(String authorId, @RequestBody CreateReviewRequestDto requestDto) {
-        NewReviewDto newReviewDto = new NewReviewDto();
+    public void addReview(String authorId, @RequestBody AddReviewRequestDto requestDto) {
+        AddReviewDto addReviewDto = new AddReviewDto();
 
-        newReviewDto.setRating(requestDto.rating);
-        newReviewDto.setDetails(requestDto.details);
-        newReviewDto.setAuthorId(authorId);
-        newReviewDto.setRevieweeId(requestDto.revieweeId);
+        addReviewDto.setRating(requestDto.rating);
+        addReviewDto.setDetails(requestDto.details);
+        addReviewDto.setAuthorId(authorId);
+        addReviewDto.setRevieweeId(requestDto.revieweeId);
     
-        reviewService.addReview(newReviewDto);
+        reviewService.addReview(addReviewDto);
+    }
+
+    @DeleteMapping
+    public void remove(@RequestBody RemoveReviewRequestDto requestDto) {
+        RemoveReviewDto removeReviewDto = new RemoveReviewDto();
+
+        removeReviewDto.setRevieweeId(requestDto.revieweeId);
+        removeReviewDto.setReviewId(requestDto.reviewId);
+
+        reviewService.removeReview(removeReviewDto);
     }
 }

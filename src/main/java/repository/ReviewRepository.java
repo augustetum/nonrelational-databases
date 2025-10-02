@@ -11,7 +11,6 @@ import entity.Review;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.UpdateResult;
 
 @Repository
 public class ReviewRepository {
@@ -37,12 +36,20 @@ public class ReviewRepository {
 
     public void add(String revieweeId, Review review) {
         Document reviewDocument = convertReviewToDocument(review);
-
+        
         Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
         Bson updates = Updates.push("reviews", reviewDocument);
         
-        UpdateResult result = dbContext.freelancers.updateOne(filter, updates);
-        System.out.println("result: " + result);
+        dbContext.freelancers.updateOne(filter, updates);
+    }
+
+    public void remove(String revieweeId, String reviewId) {
+        Bson reviewFilter = Filters.eq("_id", new ObjectId(reviewId));
+        Bson updates = Updates.pull("reviews", reviewFilter);
+
+        Bson userFilter = Filters.eq("_id", new ObjectId(revieweeId));
+        
+        dbContext.freelancers.updateOne(userFilter, updates);
     }
 
     private Document convertReviewToDocument(Review review) {

@@ -6,9 +6,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.springframework.stereotype.Repository;
-import config.MongoDbContext;
 import entity.Review;
-
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
@@ -17,13 +15,13 @@ import com.mongodb.client.result.UpdateResult;
 
 @Repository
 public abstract class ReviewRepository {
-    protected final MongoDbContext dbContext;
+    private final MongoCollection<Document> collection;
 
-    public ReviewRepository(MongoDbContext dbContext) {
-        this.dbContext = dbContext;
+    public ReviewRepository(MongoCollection<Document> collection) {
+        this.collection = collection;
     }
 
-    protected List<Review> get(String revieweeId, MongoCollection<Document> collection) {
+    public List<Review> get(String revieweeId) {
         Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
         Bson projections = Projections.include("reviews");
 
@@ -37,7 +35,7 @@ public abstract class ReviewRepository {
         return reviews;
     }
 
-    protected void add(String revieweeId, Review review, MongoCollection<Document> collection) {
+    public void add(String revieweeId, Review review) {
         Document reviewDocument = convertReviewToDocument(review);
         
         Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
@@ -46,7 +44,7 @@ public abstract class ReviewRepository {
         collection.updateOne(filter, updates);
     }
 
-    protected void update(String revieweeId, Review review, MongoCollection<Document> collection) {
+    public void update(String revieweeId, Review review) {
         Bson filter = Filters.and(
             Filters.eq("_id", new ObjectId(revieweeId)),
             Filters.eq("reviews._id", new ObjectId(review.id))
@@ -61,7 +59,7 @@ public abstract class ReviewRepository {
         System.out.println(result);
     }
 
-    protected void remove(String revieweeId, String reviewId, MongoCollection<Document> collection) {
+    public void remove(String revieweeId, String reviewId) {
         Bson reviewFilter = Filters.eq("_id", new ObjectId(reviewId));
         Bson updates = Updates.pull("reviews", reviewFilter);
 

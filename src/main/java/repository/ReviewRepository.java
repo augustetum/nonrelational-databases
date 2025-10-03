@@ -70,7 +70,6 @@ public abstract class ReviewRepository {
 
     protected Document convertReviewToDocument(Review review) {
         Document document = new Document();
-
         document.append("_id", new ObjectId());
         document.append("rating", review.rating);
         document.append("details", review.details);
@@ -81,7 +80,6 @@ public abstract class ReviewRepository {
 
     protected Review convertDocumentToReview(Document document) {
         Review review = new Review();
-
         review.setId(document.getString("_id"));
         review.setRating(document.getDouble("rating"));
         review.setDetails(document.getString("details"));

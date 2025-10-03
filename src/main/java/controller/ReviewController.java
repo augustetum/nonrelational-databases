@@ -43,6 +43,7 @@ public class ReviewController {
         addReviewDto.setRating(requestDto.rating);
         addReviewDto.setDetails(requestDto.details);
         addReviewDto.setAuthorId(authorId);
+        addReviewDto.setClient(isClient);
         addReviewDto.setRevieweeId(requestDto.revieweeId);
     
         reviewService.addReview(addReviewDto);

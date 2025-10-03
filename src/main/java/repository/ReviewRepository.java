@@ -47,7 +47,7 @@ public abstract class ReviewRepository {
     public void update(String revieweeId, Review review) {
         Bson filter = Filters.and(
             Filters.eq("_id", new ObjectId(revieweeId)),
-            Filters.eq("reviews._id", new ObjectId(review.id))
+            Filters.eq("reviews._id", review.id)
         );
 
         Bson updates = Updates.combine(
@@ -60,7 +60,7 @@ public abstract class ReviewRepository {
     }
 
     public void remove(String revieweeId, String reviewId) {
-        Bson reviewFilter = Filters.eq("_id", new ObjectId(reviewId));
+        Bson reviewFilter = Filters.eq("id", reviewId);
         Bson updates = Updates.pull("reviews", reviewFilter);
 
         Bson userFilter = Filters.eq("_id", new ObjectId(revieweeId));
@@ -69,8 +69,10 @@ public abstract class ReviewRepository {
     }
 
     protected Document convertReviewToDocument(Review review) {
+        ObjectId reviewId = new ObjectId();
+
         Document document = new Document();
-        document.append("_id", new ObjectId());
+        document.append("id", reviewId.toString());
         document.append("rating", review.rating);
         document.append("details", review.details);
         document.append("authorId", review.authorId);
@@ -80,7 +82,7 @@ public abstract class ReviewRepository {
 
     protected Review convertDocumentToReview(Document document) {
         Review review = new Review();
-        review.setId(document.getString("_id"));
+        review.setId(document.getString("id"));
         review.setRating(document.getDouble("rating"));
         review.setDetails(document.getString("details"));
         review.setAuthorId(document.getString("authorId"));

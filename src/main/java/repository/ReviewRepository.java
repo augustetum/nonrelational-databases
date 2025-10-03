@@ -8,24 +8,26 @@ import org.bson.types.ObjectId;
 import org.springframework.stereotype.Repository;
 import config.MongoDbContext;
 import entity.Review;
+
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 
 @Repository
-public class ReviewRepository {
-    private final MongoDbContext dbContext;
+public abstract class ReviewRepository {
+    protected final MongoDbContext dbContext;
 
     public ReviewRepository(MongoDbContext dbContext) {
         this.dbContext = dbContext;
     }
 
-    public List<Review> get(String revieweeId) {
+    protected List<Review> get(String revieweeId, MongoCollection<Document> collection) {
         Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
         Bson projections = Projections.include("reviews");
 
-        List<Review> reviews = dbContext.freelancers.find(filter)
+        List<Review> reviews = collection.find(filter)
             .projection(projections)
             .into(new ArrayList<Document>())
             .stream()
@@ -35,16 +37,16 @@ public class ReviewRepository {
         return reviews;
     }
 
-    public void add(String revieweeId, Review review) {
+    protected void add(String revieweeId, Review review, MongoCollection<Document> collection) {
         Document reviewDocument = convertReviewToDocument(review);
         
         Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
         Bson updates = Updates.push("reviews", reviewDocument);
-        
-        dbContext.freelancers.updateOne(filter, updates);
+
+        collection.updateOne(filter, updates);
     }
 
-    public void update(String revieweeId, Review review) {
+    protected void update(String revieweeId, Review review, MongoCollection<Document> collection) {
         Bson filter = Filters.and(
             Filters.eq("_id", new ObjectId(revieweeId)),
             Filters.eq("reviews._id", new ObjectId(review.id))
@@ -55,20 +57,20 @@ public class ReviewRepository {
             Updates.set("reviews.$.details", review.details)
         );
 
-        UpdateResult result = dbContext.freelancers.updateOne(filter, updates);
+        UpdateResult result = collection.updateOne(filter, updates);
         System.out.println(result);
     }
 
-    public void remove(String revieweeId, String reviewId) {
+    protected void remove(String revieweeId, String reviewId, MongoCollection<Document> collection) {
         Bson reviewFilter = Filters.eq("_id", new ObjectId(reviewId));
         Bson updates = Updates.pull("reviews", reviewFilter);
 
         Bson userFilter = Filters.eq("_id", new ObjectId(revieweeId));
         
-        dbContext.freelancers.updateOne(userFilter, updates);
+        collection.updateOne(userFilter, updates);
     }
 
-    private Document convertReviewToDocument(Review review) {
+    protected Document convertReviewToDocument(Review review) {
         Document document = new Document();
 
         document.append("_id", new ObjectId());
@@ -79,7 +81,7 @@ public class ReviewRepository {
         return document;
     }
 
-    private Review convertDocumentToReview(Document document) {
+    protected Review convertDocumentToReview(Document document) {
         Review review = new Review();
 
         review.setId(document.getString("_id"));

@@ -4,44 +4,56 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import dto.AddReviewDto;
 import dto.EditReviewDto;
+import dto.GetReviewsDto;
 import dto.RemoveReviewDto;
 import entity.Review;
-import repository.ReviewRepository;
+import repository.ClientReviewRepository;
+import repository.FreelancerReviewRepository;
 
 @Service
 public class ReviewService {
-    private final ReviewRepository repository;
+    private final ClientReviewRepository clientReviewRepository;
+    private final FreelancerReviewRepository freelancerReviewRepository;
 
-    public ReviewService(ReviewRepository repository) {
-        this.repository = repository;
+    public ReviewService(ClientReviewRepository clientReviewRepository, FreelancerReviewRepository freelancerReviewRepository) {
+        this.clientReviewRepository = clientReviewRepository;
+        this.freelancerReviewRepository = freelancerReviewRepository;
     }
 
-    public List<Review> getByRevieweeId(String revieweeId) {
-        return repository.get(revieweeId);
+    public List<Review> getByRevieweeId(GetReviewsDto dto) {
+        if (dto.isClient) {
+            return clientReviewRepository.get(dto.revieweeId);
+        }
+        else {
+            return freelancerReviewRepository.get(dto.revieweeId);
+        }
     }
 
     public void addReview(AddReviewDto dto) {
         Review review = new Review();
-
         review.setRating(dto.rating);
         review.setDetails(dto.details);
         review.setAuthorId(dto.authorId);
 
-        repository.add(dto.revieweeId, review);
+        if (dto.isClient) {
+            clientReviewRepository.add(dto.revieweeId, review);
+        }
+        else {
+            freelancerReviewRepository.add(dto.revieweeId, review);
+        }
     }
 
     public void editReview(EditReviewDto dto) {
         Review review = new Review();
-
         review.setId(dto.id);
         review.setRating(dto.rating);
         review.setDetails(dto.details);
         review.setAuthorId(dto.authorId);
 
-        repository.update(dto.revieweeId, review);
+        freelancerReviewRepository.update(dto.revieweeId, review);
     }
 
     public void removeReview(RemoveReviewDto dto) {
-        repository.remove(dto.revieweeId, dto.reviewId);
+        freelancerReviewRepository.remove(dto.revieweeId, dto.reviewId);
     }
 }

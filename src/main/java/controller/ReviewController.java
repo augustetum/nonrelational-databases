@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import dto.AddReviewRequestDto;
 import dto.EditReviewDto;
 import dto.EditReviewRequestDto;
+import dto.GetReviewsDto;
 import dto.RemoveReviewDto;
 import dto.RemoveReviewRequestDto;
 import dto.AddReviewDto;
@@ -26,15 +27,19 @@ public class ReviewController {
     private ReviewService reviewService;
 
     @GetMapping
-    public ResponseEntity<List<Review>> getByRevieweeId(String revieweeId) {
-        List<Review> reviews = reviewService.getByRevieweeId(revieweeId);
+    public ResponseEntity<List<Review>> getByRevieweeId(boolean isClient, String revieweeId) {
+        GetReviewsDto getReviewsDto = new GetReviewsDto();
+        getReviewsDto.setRevieweeId(revieweeId);
+        getReviewsDto.setIsClient(isClient);
+        
+        List<Review> reviews = reviewService.getByRevieweeId(getReviewsDto);
+
         return ResponseEntity.ok(reviews);
     }
 
     @PostMapping
-    public void addReview(String authorId, @RequestBody AddReviewRequestDto requestDto) {
+    public void addReview(String authorId, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {
         AddReviewDto addReviewDto = new AddReviewDto();
-
         addReviewDto.setRating(requestDto.rating);
         addReviewDto.setDetails(requestDto.details);
         addReviewDto.setAuthorId(authorId);
@@ -44,9 +49,8 @@ public class ReviewController {
     }
 
     @PutMapping
-    public void editReview(String authorId, @RequestBody EditReviewRequestDto requestDto) {
+    public void editReview(String authorId, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
         EditReviewDto editReviewDto = new EditReviewDto();
-
         editReviewDto.setId(requestDto.id);
         editReviewDto.setRating(requestDto.rating);
         editReviewDto.setDetails(requestDto.details);
@@ -59,7 +63,6 @@ public class ReviewController {
     @DeleteMapping
     public void removeReview(@RequestBody RemoveReviewRequestDto requestDto) {
         RemoveReviewDto removeReviewDto = new RemoveReviewDto();
-
         removeReviewDto.setRevieweeId(requestDto.revieweeId);
         removeReviewDto.setReviewId(requestDto.reviewId);
 

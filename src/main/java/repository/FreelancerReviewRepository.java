@@ -1,12 +1,7 @@
 package repository;
 
 import java.util.List;
-
-import org.bson.Document;
 import org.springframework.stereotype.Repository;
-
-import com.mongodb.client.MongoCollection;
-
 import config.MongoDbContext;
 import entity.Review;
 

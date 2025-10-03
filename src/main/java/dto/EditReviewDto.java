@@ -8,5 +8,6 @@ public class EditReviewDto {
     public double rating;
     public String details;
     public String authorId;
+    public boolean isClient;
     public String revieweeId;
 }

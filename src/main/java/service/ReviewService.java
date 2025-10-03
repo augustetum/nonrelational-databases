@@ -22,10 +22,10 @@ public class ReviewService {
 
     public List<Review> getByRevieweeId(GetReviewsDto dto) {
         if (dto.isClient) {
-            return clientReviewRepository.get(dto.revieweeId);
+            return freelancerReviewRepository.get(dto.revieweeId);
         }
         else {
-            return freelancerReviewRepository.get(dto.revieweeId);
+            return clientReviewRepository.get(dto.revieweeId);
         }
     }
 
@@ -36,10 +36,10 @@ public class ReviewService {
         review.setAuthorId(dto.authorId);
 
         if (dto.isClient) {
-            clientReviewRepository.add(dto.revieweeId, review);
+            freelancerReviewRepository.add(dto.revieweeId, review);
         }
         else {
-            freelancerReviewRepository.add(dto.revieweeId, review);
+            clientReviewRepository.add(dto.revieweeId, review);
         }
     }
 
@@ -50,10 +50,20 @@ public class ReviewService {
         review.setDetails(dto.details);
         review.setAuthorId(dto.authorId);
 
-        freelancerReviewRepository.update(dto.revieweeId, review);
+        if (dto.isClient) {
+            freelancerReviewRepository.update(dto.revieweeId, review);
+        }
+        else {
+            clientReviewRepository.update(dto.revieweeId, review);
+        }
     }
 
     public void removeReview(RemoveReviewDto dto) {
-        freelancerReviewRepository.remove(dto.revieweeId, dto.reviewId);
+        if (dto.isClient) {
+            freelancerReviewRepository.remove(dto.revieweeId, dto.reviewId);
+        }
+        else {
+            clientReviewRepository.remove(dto.revieweeId, dto.reviewId);
+        }
     }
 }

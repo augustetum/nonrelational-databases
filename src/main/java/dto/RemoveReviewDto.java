@@ -6,4 +6,5 @@ import lombok.Data;
 public class RemoveReviewDto {
     public String revieweeId;
     public String reviewId;
+    public boolean isClient;
 }

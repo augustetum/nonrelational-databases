@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import dto.AddReviewRequestDto;
+import dto.EditReviewDto;
+import dto.EditReviewRequestDto;
 import dto.RemoveReviewDto;
 import dto.RemoveReviewRequestDto;
 import dto.AddReviewDto;
@@ -38,6 +40,16 @@ public class ReviewController {
         addReviewDto.setRevieweeId(requestDto.revieweeId);
     
         reviewService.addReview(addReviewDto);
+    }
+
+    public void editReview(String authorId, @RequestBody EditReviewRequestDto requestDto) {
+        EditReviewDto editReviewDto = new EditReviewDto();
+
+        editReviewDto.setId(requestDto.id);
+        editReviewDto.setRating(requestDto.rating);
+        editReviewDto.setDetails(requestDto.details);
+        editReviewDto.setAuthorId(authorId);
+        editReviewDto.setRevieweeId(requestDto.revieweeId);        
     }
 
     @DeleteMapping

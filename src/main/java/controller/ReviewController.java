@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,6 +43,7 @@ public class ReviewController {
         reviewService.addReview(addReviewDto);
     }
 
+    @PutMapping
     public void editReview(String authorId, @RequestBody EditReviewRequestDto requestDto) {
         EditReviewDto editReviewDto = new EditReviewDto();
 
@@ -49,11 +51,13 @@ public class ReviewController {
         editReviewDto.setRating(requestDto.rating);
         editReviewDto.setDetails(requestDto.details);
         editReviewDto.setAuthorId(authorId);
-        editReviewDto.setRevieweeId(requestDto.revieweeId);        
+        editReviewDto.setRevieweeId(requestDto.revieweeId);   
+        
+        reviewService.editReview(editReviewDto);
     }
 
     @DeleteMapping
-    public void remove(@RequestBody RemoveReviewRequestDto requestDto) {
+    public void removeReview(@RequestBody RemoveReviewRequestDto requestDto) {
         RemoveReviewDto removeReviewDto = new RemoveReviewDto();
 
         removeReviewDto.setRevieweeId(requestDto.revieweeId);

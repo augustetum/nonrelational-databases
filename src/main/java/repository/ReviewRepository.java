@@ -4,14 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.types.ObjectId;
 import org.springframework.stereotype.Repository;
 import entity.Review;
+import utils.IdentifierGenerator;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.UpdateResult;
 
 @Repository
 public abstract class ReviewRepository {
@@ -22,7 +21,7 @@ public abstract class ReviewRepository {
     }
 
     public List<Review> get(String revieweeId) {
-        Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
+        Bson filter = Filters.eq("_id", revieweeId);
         Bson projections = Projections.include("reviews");
 
         List<Review> reviews = collection.find(filter)
@@ -36,9 +35,12 @@ public abstract class ReviewRepository {
     }
 
     public void add(String revieweeId, Review review) {
+        String reviewId = IdentifierGenerator.generateId();
+        review.setId(reviewId);
+
         Document reviewDocument = convertReviewToDocument(review);
         
-        Bson filter = Filters.eq("_id", new ObjectId(revieweeId));
+        Bson filter = Filters.eq("_id", revieweeId);
         Bson updates = Updates.push("reviews", reviewDocument);
 
         collection.updateOne(filter, updates);
@@ -46,7 +48,7 @@ public abstract class ReviewRepository {
 
     public void update(String revieweeId, Review review) {
         Bson filter = Filters.and(
-            Filters.eq("_id", new ObjectId(revieweeId)),
+            Filters.eq("_id", revieweeId),
             Filters.eq("reviews._id", review.id)
         );
 
@@ -55,24 +57,21 @@ public abstract class ReviewRepository {
             Updates.set("reviews.$.details", review.details)
         );
 
-        UpdateResult result = collection.updateOne(filter, updates);
-        System.out.println(result);
+        collection.updateOne(filter, updates);
     }
 
     public void remove(String revieweeId, String reviewId) {
-        Bson reviewFilter = Filters.eq("id", reviewId);
+        Bson reviewFilter = Filters.eq("_id", reviewId);
         Bson updates = Updates.pull("reviews", reviewFilter);
 
-        Bson userFilter = Filters.eq("_id", new ObjectId(revieweeId));
+        Bson userFilter = Filters.eq("_id", revieweeId);
         
         collection.updateOne(userFilter, updates);
     }
 
     protected Document convertReviewToDocument(Review review) {
-        ObjectId reviewId = new ObjectId();
-
         Document document = new Document();
-        document.append("id", reviewId.toString());
+        document.append("_id", review.id);
         document.append("rating", review.rating);
         document.append("details", review.details);
         document.append("authorId", review.authorId);
@@ -82,7 +81,7 @@ public abstract class ReviewRepository {
 
     protected Review convertDocumentToReview(Document document) {
         Review review = new Review();
-        review.setId(document.getString("id"));
+        review.setId(document.getString("_id"));
         review.setRating(document.getDouble("rating"));
         review.setDetails(document.getString("details"));
         review.setAuthorId(document.getString("authorId"));

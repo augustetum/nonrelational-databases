@@ -1,6 +1,7 @@
 package repository;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -22,16 +23,17 @@ public abstract class ReviewRepository {
 
     public List<Review> get(String revieweeId) {
         Bson filter = Filters.eq("_id", revieweeId);
-        Bson projections = Projections.include("reviews");
+        Bson projection = Projections.include("reviews");
 
-        List<Review> reviews = collection.find(filter)
-            .projection(projections)
-            .into(new ArrayList<Document>())
-            .stream()
+        Document document = collection.find(filter)
+            .projection(projection)
+            .first();
+
+        List<Document> reviewDocuments = (List<Document>) document.get("reviews");
+
+        return reviewDocuments.stream()
             .map(this::convertDocumentToReview)
             .toList();
-
-        return reviews;
     }
 
     public void add(String revieweeId, Review review) {
@@ -81,10 +83,18 @@ public abstract class ReviewRepository {
 
     protected Review convertDocumentToReview(Document document) {
         Review review = new Review();
-        review.setId(document.getString("_id"));
-        review.setRating(document.getDouble("rating"));
-        review.setDetails(document.getString("details"));
-        review.setAuthorId(document.getString("authorId"));
+
+        String id = document.getString("_id");
+        review.setId(id);
+
+        Double rating = document.getDouble("rating");
+        review.setRating(rating);
+
+        String details = document.getString("details");
+        review.setDetails(details);
+
+        String authorId = document.getString("authorId");
+        review.setAuthorId(authorId);
 
         return review;
     }

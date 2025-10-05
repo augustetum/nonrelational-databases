@@ -1,7 +1,5 @@
 package repository;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -63,11 +61,11 @@ public abstract class ReviewRepository {
     }
 
     public void remove(String revieweeId, String reviewId) {
-        Bson reviewFilter = Filters.eq("_id", reviewId);
-        Bson updates = Updates.pull("reviews", reviewFilter);
-
-        Bson userFilter = Filters.eq("_id", revieweeId);
+        Bson reviewToRemove = new Document("_id", reviewId);
+        Bson updates = Updates.pull("reviews", reviewToRemove);
         
+        Bson userFilter = Filters.eq("_id", revieweeId);
+
         collection.updateOne(userFilter, updates);
     }
 

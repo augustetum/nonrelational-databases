@@ -63,10 +63,12 @@ public class ReviewController {
     }
 
     @DeleteMapping
-    public void removeReview(@RequestBody RemoveReviewRequestDto requestDto) {
+    public void removeReview(String authorId, boolean isClient, @RequestBody RemoveReviewRequestDto requestDto) {
         RemoveReviewDto removeReviewDto = new RemoveReviewDto();
         removeReviewDto.setRevieweeId(requestDto.revieweeId);
         removeReviewDto.setReviewId(requestDto.reviewId);
+        removeReviewDto.setAuthorId(authorId);
+        removeReviewDto.setClient(isClient);
 
         reviewService.removeReview(removeReviewDto);
     }

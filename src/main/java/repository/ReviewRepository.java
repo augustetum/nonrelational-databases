@@ -5,7 +5,8 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
 import entity.Review;
-import utils.IdentifierGenerator;
+import util.IdentifierGenerator;
+
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;

@@ -22,10 +22,10 @@ public class ReviewService {
 
     public List<Review> getByRevieweeId(GetReviewsDto dto) {
         if (dto.isClient) {
-            return freelancerReviewRepository.get(dto.revieweeId);
+            return freelancerReviewRepository.getAll(dto.revieweeId);
         }
         else {
-            return clientReviewRepository.get(dto.revieweeId);
+            return clientReviewRepository.getAll(dto.revieweeId);
         }
     }
 

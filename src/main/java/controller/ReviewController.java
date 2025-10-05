@@ -2,6 +2,7 @@ package controller;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import dto.AddReviewRequestDto;
+import dto.AuthorizationResultDto;
 import dto.EditReviewDto;
 import dto.EditReviewRequestDto;
 import dto.GetReviewsDto;
@@ -18,11 +20,15 @@ import dto.RemoveReviewDto;
 import dto.RemoveReviewRequestDto;
 import dto.AddReviewDto;
 import entity.Review;
+import enumerator.AuthorizationStatus;
+import service.AuthorizationService;
 import service.ReviewService;
 
 @RestController
 @RequestMapping("/api/reviews")
 public class ReviewController {
+    @Autowired
+    private AuthorizationService authorizationService;
     @Autowired
     private ReviewService reviewService;
 
@@ -38,15 +44,27 @@ public class ReviewController {
     }
 
     @PostMapping
-    public void addReview(String authorId, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {
+    public ResponseEntity<?> addReview(String authorId, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {
         AddReviewDto addReviewDto = new AddReviewDto();
         addReviewDto.setRating(requestDto.rating);
         addReviewDto.setDetails(requestDto.details);
         addReviewDto.setAuthorId(authorId);
         addReviewDto.setClient(isClient);
         addReviewDto.setRevieweeId(requestDto.revieweeId);
-    
+        
+        // check if user allowed to add review
+        AuthorizationResultDto authorizationResult = authorizationService.canAddReview(addReviewDto);
+        AuthorizationStatus status = authorizationResult.getStatus(); 
+        
+        if (status == AuthorizationStatus.FAILURE)
+        {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(authorizationResult);
+        }
+
+        // add review
         reviewService.addReview(addReviewDto);
+
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping

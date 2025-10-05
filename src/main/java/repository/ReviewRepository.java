@@ -1,13 +1,17 @@
 package repository;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
 import entity.Review;
 import util.IdentifierGenerator;
-
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -20,14 +24,37 @@ public abstract class ReviewRepository {
         this.collection = collection;
     }
 
-    public List<Review> get(String revieweeId) {
+    public Optional<Review> getByAuthorId(String revieweeId, String authorId) {
+        Bson revieweeIdFilter = Filters.eq("_id", revieweeId);
+        Bson authorIdFilter = Filters.eq("reviews.authorId", authorId);
+
+        List<Document> documents = collection.aggregate(Arrays.asList(
+            Aggregates.match(revieweeIdFilter),
+            Aggregates.unwind("$reviews"),
+            Aggregates.match(authorIdFilter),
+            Aggregates.replaceRoot("$reviews")
+        )).into(new ArrayList<>());
+
+        if (documents.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Review review = convertDocumentToReview(documents.get(0));
+        return Optional.of(review);
+    }
+
+    public List<Review> getAll(String revieweeId) {
         Bson filter = Filters.eq("_id", revieweeId);
-        Bson projection = Projections.include("reviews");
+        Bson projection = Projections.fields(
+            Projections.excludeId(),
+            Projections.include("reviews")
+        );
 
         Document document = collection.find(filter)
             .projection(projection)
             .first();
 
+        // TODO: fix warning
         List<Document> reviewDocuments = (List<Document>) document.get("reviews");
 
         return reviewDocuments.stream()

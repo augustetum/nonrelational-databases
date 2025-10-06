@@ -24,6 +24,25 @@ public abstract class ReviewRepository {
         this.collection = collection;
     }
 
+    public Optional<Review> getByReviewId(String revieweeId, String reviewId) {
+        Bson revieweeIdFilter = Filters.eq("_id", revieweeId);
+        Bson reviewIdFilter = Filters.eq("reviews._id", reviewId);
+
+        List<Document> documents = collection.aggregate(Arrays.asList(
+            Aggregates.match(revieweeIdFilter),            
+            Aggregates.unwind("$reviews"),
+            Aggregates.match(reviewIdFilter),
+            Aggregates.replaceRoot("$reviews")
+        )).into(new ArrayList<>());
+
+        if (documents.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Review review = convertDocumentToReview(documents.get(0));
+        return Optional.of(review);
+    }
+
     public Optional<Review> getByAuthorId(String revieweeId, String authorId) {
         Bson revieweeIdFilter = Filters.eq("_id", revieweeId);
         Bson authorIdFilter = Filters.eq("reviews.authorId", authorId);

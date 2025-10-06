@@ -1,17 +1,17 @@
 package dto;
 
-import enumerator.AuthorizationStatus;
+import enumerator.PermissionStatus;
 
 public class PermissionCheckResultDto {
-    private AuthorizationStatus status = AuthorizationStatus.SUCCESS;
+    private PermissionStatus status = PermissionStatus.ALLOWED;
     private String message;
 
     public void setMessage(String message) {
-        this.status = AuthorizationStatus.FAILURE;
+        this.status = PermissionStatus.DENIED;
         this.message = message;
     }
 
-    public AuthorizationStatus getStatus() {
+    public PermissionStatus getStatus() {
         return status;
     }
 

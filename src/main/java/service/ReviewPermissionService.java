@@ -22,20 +22,45 @@ public class ReviewPermissionService {
         PermissionCheckResultDto result = new PermissionCheckResultDto();
 
         if (dto.revieweeId == dto.authorId) {
-            result.setMessage("Users can't write reviews to themselves.");
+            result.setMessage("Users are not allowed write reviews to themselves.");
             return result;
         }
 
-        Optional<Review> review; 
+        Optional<Review> maybeReview; 
         if (dto.isClient) {
-            review = freelancerReviewRepository.getByAuthorId(dto.revieweeId, dto.authorId);
+            maybeReview = freelancerReviewRepository.getByAuthorId(dto.revieweeId, dto.authorId);
         }
         else {
-            review = clientReviewRepository.getByAuthorId(dto.revieweeId, dto.authorId);
+            maybeReview = clientReviewRepository.getByAuthorId(dto.revieweeId, dto.authorId);
         }
 
-        if (review.isPresent()) {
-            result.setMessage("User can't write review to the same person twice.");
+        if (maybeReview.isPresent()) {
+            result.setMessage("Users are not allowed to write reviews to the same person more than once.");
+            return result;
+        }
+
+        return result;
+    }
+
+    public PermissionCheckResultDto canEditReview(String revieweeId, String reviewId, String requestorId, boolean isClient) {
+        PermissionCheckResultDto result = new PermissionCheckResultDto();
+        
+        Optional<Review> maybeReview;
+        if(isClient) {
+            maybeReview = freelancerReviewRepository.getByReviewId(revieweeId, reviewId);
+        }
+        else {
+            maybeReview = clientReviewRepository.getByReviewId(revieweeId, reviewId);
+        }
+
+        if (!maybeReview.isPresent()) {
+            result.setMessage("Review with specified id does not exist.");
+            return result;
+        }
+
+        Review review = maybeReview.get();
+        if (review.authorId != requestorId) {
+            result.setMessage("Users are not allowed to edit reviews written by other users.");
             return result;
         }
 

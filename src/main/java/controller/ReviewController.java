@@ -20,7 +20,7 @@ import dto.RemoveReviewDto;
 import dto.RemoveReviewRequestDto;
 import dto.AddReviewDto;
 import entity.Review;
-import enumerator.AuthorizationStatus;
+import enumerator.PermissionStatus;
 import service.ReviewPermissionService;
 import service.ReviewService;
 
@@ -53,12 +53,12 @@ public class ReviewController {
         addReviewDto.setRevieweeId(requestDto.revieweeId);
         
         // check if user allowed to add review
-        PermissionCheckResultDto authorizationResult = permissionService.canAddReview(addReviewDto);
-        AuthorizationStatus status = authorizationResult.getStatus(); 
+        PermissionCheckResultDto permissionResult = permissionService.canAddReview(addReviewDto);
+        PermissionStatus status = permissionResult.getStatus(); 
         
-        if (status == AuthorizationStatus.FAILURE)
+        if (status == PermissionStatus.DENIED)
         {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(authorizationResult);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
 
         // add review
@@ -68,16 +68,28 @@ public class ReviewController {
     }
 
     @PutMapping
-    public void editReview(String authorId, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
+    public ResponseEntity<?> editReview(String authorId, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
+        // check if user allowed to edit review
+        PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.id, authorId, isClient);
+        PermissionStatus status = permissionResult.getStatus(); 
+
+        if (status == PermissionStatus.DENIED)
+        {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
+        }
+        
+        // edit review
         EditReviewDto editReviewDto = new EditReviewDto();
         editReviewDto.setId(requestDto.id);
         editReviewDto.setRating(requestDto.rating);
         editReviewDto.setDetails(requestDto.details);
         editReviewDto.setAuthorId(authorId);
         editReviewDto.setClient(isClient);
-        editReviewDto.setRevieweeId(requestDto.revieweeId);   
-        
+        editReviewDto.setRevieweeId(requestDto.revieweeId);
+
         reviewService.editReview(editReviewDto);
+
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping

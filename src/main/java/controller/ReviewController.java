@@ -21,14 +21,14 @@ import dto.RemoveReviewRequestDto;
 import dto.AddReviewDto;
 import entity.Review;
 import enumerator.AuthorizationStatus;
-import service.AuthorizationService;
+import service.ReviewPermissionService;
 import service.ReviewService;
 
 @RestController
 @RequestMapping("/api/reviews")
 public class ReviewController {
     @Autowired
-    private AuthorizationService authorizationService;
+    private ReviewPermissionService permissionService;
     @Autowired
     private ReviewService reviewService;
 

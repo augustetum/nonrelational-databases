@@ -9,11 +9,11 @@ import repository.ClientReviewRepository;
 import repository.FreelancerReviewRepository;
 
 @Service
-public class AuthorizationService {
+public class ReviewPermissionService {
     private final ClientReviewRepository clientReviewRepository;
     private final FreelancerReviewRepository freelancerReviewRepository;
 
-    public AuthorizationService(ClientReviewRepository clientReviewRepository, FreelancerReviewRepository freelancerReviewRepository) {
+    public ReviewPermissionService(ClientReviewRepository clientReviewRepository, FreelancerReviewRepository freelancerReviewRepository) {
         this.clientReviewRepository = clientReviewRepository;
         this.freelancerReviewRepository = freelancerReviewRepository;
     }

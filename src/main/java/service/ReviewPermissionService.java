@@ -58,8 +58,33 @@ public class ReviewPermissionService {
         }
 
         Review review = maybeReview.get();
-        if (review.authorId != requestorId) {
+        if (!requestorId.equals(review.authorId)) {
             result.setMessage("Users are not allowed to edit reviews written by other users.");
+            return result;
+        }
+
+        return result;
+    }
+
+    public PermissionCheckResultDto canDeleteReview(String revieweeId, String reviewId, String requestorId, boolean isClient) {
+        PermissionCheckResultDto result = new PermissionCheckResultDto();
+
+        Optional<Review> maybeReview;
+        if(isClient) {
+            maybeReview = freelancerReviewRepository.getByReviewId(revieweeId, reviewId);
+        }
+        else {
+            maybeReview = clientReviewRepository.getByReviewId(revieweeId, reviewId);
+        }
+
+        if (!maybeReview.isPresent()) {
+            result.setMessage("Review with specified id does not exist.");
+            return result;
+        }
+
+        Review review = maybeReview.get();
+        if (!requestorId.equals(review.authorId)) {
+            result.setMessage("Users are not allowed to delete reviews written by other users.");
             return result;
         }
 

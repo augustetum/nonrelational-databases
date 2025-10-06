@@ -93,7 +93,17 @@ public class ReviewController {
     }
 
     @DeleteMapping
-    public void removeReview(String authorId, boolean isClient, @RequestBody RemoveReviewRequestDto requestDto) {
+    public ResponseEntity<?> removeReview(String authorId, boolean isClient, @RequestBody RemoveReviewRequestDto requestDto) {
+        // check if user allowed to edit review
+        PermissionCheckResultDto permissionResult = permissionService.canDeleteReview(requestDto.revieweeId, requestDto.reviewId, authorId, isClient);
+        PermissionStatus status = permissionResult.getStatus(); 
+
+        if (status == PermissionStatus.DENIED)
+        {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
+        }
+        
+        // delete review       
         RemoveReviewDto removeReviewDto = new RemoveReviewDto();
         removeReviewDto.setRevieweeId(requestDto.revieweeId);
         removeReviewDto.setReviewId(requestDto.reviewId);
@@ -101,5 +111,7 @@ public class ReviewController {
         removeReviewDto.setClient(isClient);
 
         reviewService.removeReview(removeReviewDto);
+
+        return ResponseEntity.ok().build();
     }
 }

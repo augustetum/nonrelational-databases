@@ -44,16 +44,9 @@ public class ReviewController {
     }
 
     @PostMapping
-    public ResponseEntity<?> addReview(String authorId, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {
-        AddReviewDto addReviewDto = new AddReviewDto();
-        addReviewDto.setRating(requestDto.rating);
-        addReviewDto.setDetails(requestDto.details);
-        addReviewDto.setAuthorId(authorId);
-        addReviewDto.setClient(isClient);
-        addReviewDto.setRevieweeId(requestDto.revieweeId);
-        
+    public ResponseEntity<?> addReview(String authorId, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {        
         // check if user allowed to add review
-        PermissionCheckResultDto permissionResult = permissionService.canAddReview(addReviewDto);
+        PermissionCheckResultDto permissionResult = permissionService.canAddReview(requestDto.revieweeId, authorId, isClient);
         PermissionStatus status = permissionResult.getStatus(); 
         
         if (status == PermissionStatus.DENIED)
@@ -62,6 +55,13 @@ public class ReviewController {
         }
 
         // add review
+        AddReviewDto addReviewDto = new AddReviewDto();
+        addReviewDto.setRating(requestDto.rating);
+        addReviewDto.setDetails(requestDto.details);
+        addReviewDto.setAuthorId(authorId);
+        addReviewDto.setClient(isClient);
+        addReviewDto.setRevieweeId(requestDto.revieweeId);
+
         reviewService.addReview(addReviewDto);
 
         return ResponseEntity.ok().build();

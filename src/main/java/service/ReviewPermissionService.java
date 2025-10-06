@@ -2,7 +2,6 @@ package service;
 
 import java.util.Optional;
 import org.springframework.stereotype.Service;
-import dto.AddReviewDto;
 import dto.PermissionCheckResultDto;
 import entity.Review;
 import repository.ClientReviewRepository;
@@ -18,20 +17,20 @@ public class ReviewPermissionService {
         this.freelancerReviewRepository = freelancerReviewRepository;
     }
 
-    public PermissionCheckResultDto canAddReview(AddReviewDto dto) {
+    public PermissionCheckResultDto canAddReview(String revieweeId, String requestorId, boolean isClient) {
         PermissionCheckResultDto result = new PermissionCheckResultDto();
 
-        if (dto.revieweeId == dto.authorId) {
+        if (revieweeId == requestorId) {
             result.setMessage("Users are not allowed write reviews to themselves.");
             return result;
         }
 
         Optional<Review> maybeReview; 
-        if (dto.isClient) {
-            maybeReview = freelancerReviewRepository.getByAuthorId(dto.revieweeId, dto.authorId);
+        if (isClient) {
+            maybeReview = freelancerReviewRepository.getByAuthorId(revieweeId, requestorId);
         }
         else {
-            maybeReview = clientReviewRepository.getByAuthorId(dto.revieweeId, dto.authorId);
+            maybeReview = clientReviewRepository.getByAuthorId(revieweeId, requestorId);
         }
 
         if (maybeReview.isPresent()) {

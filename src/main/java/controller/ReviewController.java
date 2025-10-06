@@ -53,7 +53,7 @@ public class ReviewController {
         addReviewDto.setRevieweeId(requestDto.revieweeId);
         
         // check if user allowed to add review
-        AuthorizationResultDto authorizationResult = authorizationService.canAddReview(addReviewDto);
+        AuthorizationResultDto authorizationResult = permissionService.canAddReview(addReviewDto);
         AuthorizationStatus status = authorizationResult.getStatus(); 
         
         if (status == AuthorizationStatus.FAILURE)

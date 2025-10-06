@@ -2,7 +2,7 @@ package dto;
 
 import enumerator.AuthorizationStatus;
 
-public class AuthorizationResultDto {
+public class PermissionCheckResultDto {
     private AuthorizationStatus status = AuthorizationStatus.SUCCESS;
     private String message;
 

@@ -3,7 +3,7 @@ package service;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import dto.AddReviewDto;
-import dto.AuthorizationResultDto;
+import dto.PermissionCheckResultDto;
 import entity.Review;
 import repository.ClientReviewRepository;
 import repository.FreelancerReviewRepository;
@@ -18,8 +18,8 @@ public class ReviewPermissionService {
         this.freelancerReviewRepository = freelancerReviewRepository;
     }
 
-    public AuthorizationResultDto canAddReview(AddReviewDto dto) {
-        AuthorizationResultDto result = new AuthorizationResultDto();
+    public PermissionCheckResultDto canAddReview(AddReviewDto dto) {
+        PermissionCheckResultDto result = new PermissionCheckResultDto();
 
         if (dto.revieweeId == dto.authorId) {
             result.setMessage("Users can't write reviews to themselves.");

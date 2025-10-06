@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import dto.AddReviewRequestDto;
-import dto.AuthorizationResultDto;
+import dto.PermissionCheckResultDto;
 import dto.EditReviewDto;
 import dto.EditReviewRequestDto;
 import dto.GetReviewsDto;
@@ -53,7 +53,7 @@ public class ReviewController {
         addReviewDto.setRevieweeId(requestDto.revieweeId);
         
         // check if user allowed to add review
-        AuthorizationResultDto authorizationResult = permissionService.canAddReview(addReviewDto);
+        PermissionCheckResultDto authorizationResult = permissionService.canAddReview(addReviewDto);
         AuthorizationStatus status = authorizationResult.getStatus(); 
         
         if (status == AuthorizationStatus.FAILURE)

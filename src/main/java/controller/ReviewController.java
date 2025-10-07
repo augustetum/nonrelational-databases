@@ -71,7 +71,7 @@ public class ReviewController {
     @PutMapping
     public ResponseEntity<?> editReview(String authorId, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
         // check if user allowed to edit review
-        PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.id, authorId, isClient);
+        PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.reviewId, authorId, isClient);
         PermissionStatus status = permissionResult.getStatus(); 
 
         if (status == PermissionStatus.DENIED)
@@ -81,7 +81,7 @@ public class ReviewController {
 
         // construct & validate review
         Review review = new Review();
-        review.setId(new ReviewId(requestDto.revieweeId, requestDto.id));
+        review.setId(new ReviewId(requestDto.revieweeId, requestDto.reviewId));
         review.setRating(requestDto.rating);
         review.setDetails(requestDto.details);
         review.setAuthorId(authorId);

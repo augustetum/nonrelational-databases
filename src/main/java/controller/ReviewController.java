@@ -18,7 +18,6 @@ import dto.RemoveReviewRequestDto;
 import dto.ValidationResultDto;
 import entity.Review;
 import entity.ReviewId;
-import enumerator.PermissionStatus;
 import service.ReviewPermissionService;
 import service.ReviewService;
 import service.ReviewValidationService;
@@ -36,7 +35,6 @@ public class ReviewController {
     @GetMapping
     public ResponseEntity<List<Review>> getByRevieweeId(boolean isClient, String revieweeId) {
         List<Review> reviews = reviewService.getByRevieweeId(revieweeId, isClient);
-
         return ResponseEntity.ok(reviews);
     }
 
@@ -44,9 +42,8 @@ public class ReviewController {
     public ResponseEntity<?> addReview(String authorId, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {        
         // check if user allowed to add review
         PermissionCheckResultDto permissionResult = permissionService.canAddReview(requestDto.revieweeId, authorId, isClient);
-        PermissionStatus status = permissionResult.getStatus(); 
         
-        if (status == PermissionStatus.DENIED)
+        if (permissionResult.isDenied())
         {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
@@ -72,9 +69,8 @@ public class ReviewController {
     public ResponseEntity<?> editReview(String authorId, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
         // check if user allowed to edit review
         PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.reviewId, authorId, isClient);
-        PermissionStatus status = permissionResult.getStatus(); 
-
-        if (status == PermissionStatus.DENIED)
+        
+        if (permissionResult.isDenied())
         {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
@@ -100,9 +96,8 @@ public class ReviewController {
     public ResponseEntity<?> removeReview(String authorId, boolean isClient, @RequestBody RemoveReviewRequestDto requestDto) {
         // check if user allowed to edit review
         PermissionCheckResultDto permissionResult = permissionService.canDeleteReview(requestDto.revieweeId, requestDto.reviewId, authorId, isClient);
-        PermissionStatus status = permissionResult.getStatus(); 
 
-        if (status == PermissionStatus.DENIED)
+        if (permissionResult.isDenied())
         {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }

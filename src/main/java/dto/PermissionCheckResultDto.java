@@ -1,18 +1,28 @@
 package dto;
 
-import enumerator.PermissionStatus;
-
 public class PermissionCheckResultDto {
-    private PermissionStatus status = PermissionStatus.ALLOWED;
+    private boolean isAllowed;
     private String message;
 
-    public void setMessage(String message) {
-        this.status = PermissionStatus.DENIED;
+    private PermissionCheckResultDto() {
+        this.isAllowed = true;
+    }
+
+    private PermissionCheckResultDto(String message) {
+        this.isAllowed = false;
         this.message = message;
     }
 
-    public PermissionStatus getStatus() {
-        return status;
+    public static PermissionCheckResultDto valid() {
+        return new PermissionCheckResultDto();
+    }
+
+    public static PermissionCheckResultDto invalid(String message) {
+        return new PermissionCheckResultDto(message);
+    }
+
+    public boolean isDenied() {
+        return !isAllowed;
     }
 
     public String getMessage() {

@@ -1,10 +1,13 @@
 package repository;
 
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
+
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 
 import config.MongoDbContext;
 import entity.Booking;
@@ -33,12 +36,29 @@ public class BookingRepository {
                     .toList();
     }
 
+    public Booking getBookingById(String bookingId){
+        List<Booking> allBookings = getAllBookings();
+        return allBookings.stream()
+                    .filter(booking -> booking.getId().equals(bookingId))
+                    .findFirst().orElse(null);
+    }
+
     public void add(Booking booking){
         String bookingId = IdentifierGenerator.generateId();
         booking.setId(bookingId);
 
         Document bookingDocument = bookingToDocument(booking);
         dbContext.bookings.insertOne(bookingDocument);
+    }
+
+    public void update(String bookingId, Booking updatedBooking){
+        Bson filter = Filters.eq("_id", bookingId);
+        Bson updates = Updates.combine(
+                        Updates.set("time", updatedBooking.getTime()),
+                        Updates.set("address", updatedBooking.getAddress()),
+                        Updates.set("details", updatedBooking.getDetails())
+        );
+        dbContext.bookings.updateOne(filter, updates);
     }
 
     public Booking documentToBooking(Document document) {

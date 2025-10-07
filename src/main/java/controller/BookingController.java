@@ -27,7 +27,7 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
     
-    @GetMapping("/{clientId}")
+    @GetMapping("/clients/{clientId}")
     public ResponseEntity<List<Booking>> getByClientId(@PathVariable String clientId){
         List<Booking> bookings = bookingService.getByClientId(clientId);
         return ResponseEntity.ok(bookings);
@@ -41,8 +41,7 @@ public class BookingController {
 
     @PutMapping("/{bookingId}")
     public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody Booking updatedBooking){
-        boolean updated = bookingService.updateBooking(bookingId, updatedBooking);
-        if(updated) return ResponseEntity.ok().build();
-        else return ResponseEntity.notFound().build();
+        bookingService.updateBooking(bookingId, updatedBooking);
+        return ResponseEntity.ok().build();
     }
 }

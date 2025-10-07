@@ -26,7 +26,7 @@ public class BookingService {
         repository.add(booking);
     }
 
-    public void updateBooking(String bookingId, Booking booking){
-        
+    public void updateBooking(String bookingId, Booking updatedBooking){
+        repository.update(bookingId, updatedBooking);
     }
 }

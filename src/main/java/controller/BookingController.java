@@ -34,6 +34,15 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
+    @GetMapping("/{bookingId}")
+    public ResponseEntity<?> getById(@PathVariable String bookingId){
+        Booking booking = bookingService.getById(bookingId);
+        return ResponseEntity.ok(booking);
+    }
+
+    // add validation for client, bookinga sukurt gali tik client, ensure all fields are not null ir kad ta diena freelanceris neturi daugiau jokio bookingo?? bet clientas gali turet kelis bookingus per diena nes tipo what if daug baldu surinkt
+    // deletint gali abu bet su date validation - jei liko 6hr deletint ar editint nebegalima
+    // updatint gali tik client
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody Booking booking){
         bookingService.createBooking(booking);

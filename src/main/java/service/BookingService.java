@@ -22,6 +22,10 @@ public class BookingService {
         return repository.getByClientId(clientId);
     }
 
+    public Booking getById(String bookingId){
+        return repository.getById(bookingId);
+    }
+
     public void createBooking(Booking booking){
         repository.add(booking);
     }

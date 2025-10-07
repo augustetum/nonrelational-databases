@@ -36,7 +36,7 @@ public class BookingRepository {
                     .toList();
     }
 
-    public Booking getBookingById(String bookingId){
+    public Booking getById(String bookingId){
         List<Booking> allBookings = getAllBookings();
         return allBookings.stream()
                     .filter(booking -> booking.getId().equals(bookingId))

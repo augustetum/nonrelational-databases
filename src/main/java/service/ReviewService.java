@@ -2,8 +2,6 @@ package service;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
-import dto.GetReviewsDto;
-import dto.RemoveReviewDto;
 import entity.Review;
 import entity.ReviewId;
 import repository.ClientReviewRepository;
@@ -19,12 +17,12 @@ public class ReviewService {
         this.freelancerReviewRepository = freelancerReviewRepository;
     }
 
-    public List<Review> getByRevieweeId(GetReviewsDto dto) {
-        if (dto.isClient) {
-            return freelancerReviewRepository.getAll(dto.revieweeId);
+    public List<Review> getByRevieweeId(String revieweeId, boolean isClient) {
+        if (isClient) {
+            return freelancerReviewRepository.getAll(revieweeId);
         }
         else {
-            return clientReviewRepository.getAll(dto.revieweeId);
+            return clientReviewRepository.getAll(revieweeId);
         }
     }
 

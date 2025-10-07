@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import dto.AddReviewRequestDto;
 import dto.PermissionCheckResultDto;
 import dto.EditReviewRequestDto;
-import dto.GetReviewsDto;
 import dto.RemoveReviewRequestDto;
 import dto.ValidationResultDto;
 import entity.Review;
@@ -36,11 +35,7 @@ public class ReviewController {
 
     @GetMapping
     public ResponseEntity<List<Review>> getByRevieweeId(boolean isClient, String revieweeId) {
-        GetReviewsDto getReviewsDto = new GetReviewsDto();
-        getReviewsDto.setRevieweeId(revieweeId);
-        getReviewsDto.setIsClient(isClient);
-        
-        List<Review> reviews = reviewService.getByRevieweeId(getReviewsDto);
+        List<Review> reviews = reviewService.getByRevieweeId(revieweeId, isClient);
 
         return ResponseEntity.ok(reviews);
     }

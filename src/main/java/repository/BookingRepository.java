@@ -1,15 +1,14 @@
 package repository;
 
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
-
-import com.mongodb.client.model.Filters;
 
 import config.MongoDbContext;
 import entity.Booking;
+import util.IdentifierGenerator;
 
 @Repository
 public class BookingRepository {

@@ -4,7 +4,7 @@ import util.IdentifierGenerator;
 
 public record ReviewId(String revieweeId, String reviewId) {
     public ReviewId(String revieweeId, String reviewId) {
-        this.revieweeId = reviewId;
+        this.revieweeId = revieweeId;
         this.reviewId = reviewId;
     }
 

@@ -2,7 +2,6 @@ package service;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import dto.ValidationResultDto;
 import entity.Booking;
 import entity.Client;
-import entity.Review;
 
 @Service
 public class BookingValidationService {
@@ -101,7 +99,7 @@ public class BookingValidationService {
 
     public ValidationResultDto validateFreelancerId(String freelancerId){
         if(freelancerId==null){
-            return ValidationResultDto.invalid("Client ID cannot be null");
+            return ValidationResultDto.invalid("Freelancer ID cannot be null");
         }
 /*
         Optional<Freelancer> freelancer = FreelancerRepository.getById(freelancerId);

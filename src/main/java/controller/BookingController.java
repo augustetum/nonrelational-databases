@@ -2,8 +2,10 @@ package controller;
 
 import entity.Booking;
 import service.BookingService;
+import service.BookingValidationService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +15,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import dto.ValidationResultDto;
+
 import java.util.List;
 
 @RestController
@@ -21,6 +26,9 @@ public class BookingController {
 
     @Autowired
     private BookingService bookingService;
+
+    @Autowired
+    private BookingValidationService validationService;
 
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
@@ -45,12 +53,23 @@ public class BookingController {
     // updatint gali tik client
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody Booking booking){
+        ValidationResultDto validationResult = validationService.validate(booking);
+        if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+
         bookingService.createBooking(booking);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{bookingId}")
     public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody Booking updatedBooking){
+        Booking booking = bookingService.getById(bookingId);
+
+        updatedBooking.setClientId(booking.getClientId());
+        updatedBooking.setFreelancerId(booking.getFreelancerId());
+        
+        ValidationResultDto validationResult = validationService.validate(updatedBooking);
+        if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+
         bookingService.updateBooking(bookingId, updatedBooking);
         return ResponseEntity.ok().build();
     }

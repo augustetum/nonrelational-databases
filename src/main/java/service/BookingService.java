@@ -2,6 +2,8 @@ package service;
 
 import entity.Booking;
 import repository.BookingRepository;
+
+import org.bson.Document;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
@@ -15,5 +17,13 @@ public class BookingService {
 
     public List<Booking> getAllBookings() {
         return repository.getAllBookings();
+    }
+
+    public List<Booking> getByClientId(String clientId){
+        return repository.getByClientId(clientId);
+    }
+
+    public void createBooking(Booking booking){
+        repository.add(booking);
     }
 }

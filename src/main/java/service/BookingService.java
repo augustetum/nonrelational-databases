@@ -25,4 +25,8 @@ public class BookingService {
     public void createBooking(Booking booking){
         repository.add(booking);
     }
+
+    public void updateBooking(String bookingId, Booking booking){
+        
+    }
 }

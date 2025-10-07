@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,5 +37,12 @@ public class BookingController {
     public ResponseEntity<?> createBooking(@RequestBody Booking booking){
         bookingService.createBooking(booking);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{bookingId}")
+    public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody Booking updatedBooking){
+        boolean updated = bookingService.updateBooking(bookingId, updatedBooking);
+        if(updated) return ResponseEntity.ok().build();
+        else return ResponseEntity.notFound().build();
     }
 }

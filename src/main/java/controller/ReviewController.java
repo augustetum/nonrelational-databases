@@ -18,17 +18,21 @@ import dto.EditReviewRequestDto;
 import dto.GetReviewsDto;
 import dto.RemoveReviewDto;
 import dto.RemoveReviewRequestDto;
+import dto.ValidationResultDto;
 import dto.AddReviewDto;
 import entity.Review;
 import enumerator.PermissionStatus;
 import service.ReviewPermissionService;
 import service.ReviewService;
+import service.ReviewValidationService;
 
 @RestController
 @RequestMapping("/api/reviews")
 public class ReviewController {
     @Autowired
     private ReviewPermissionService permissionService;
+    @Autowired
+    private ReviewValidationService validationService;
     @Autowired
     private ReviewService reviewService;
 
@@ -54,6 +58,17 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
 
+        // construct & validate review
+        Review review = new Review();
+        review.setRating(requestDto.rating);
+        review.setDetails(requestDto.details);
+        review.setAuthorId(authorId);
+
+        ValidationResultDto validationResult = validationService.validate(review, false);
+        if (validationResult.isInvalid()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+        } 
+
         // add review
         AddReviewDto addReviewDto = new AddReviewDto();
         addReviewDto.setRating(requestDto.rating);
@@ -77,6 +92,18 @@ public class ReviewController {
         {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
+
+        // construct & validate review
+        Review review = new Review();
+        review.setId(requestDto.id);
+        review.setRating(requestDto.rating);
+        review.setDetails(requestDto.details);
+        review.setAuthorId(authorId);
+
+        ValidationResultDto validationResult = validationService.validate(review, true);
+        if (validationResult.isInvalid()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+        } 
         
         // edit review
         EditReviewDto editReviewDto = new EditReviewDto();

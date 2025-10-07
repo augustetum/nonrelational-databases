@@ -2,11 +2,10 @@ package service;
 
 import java.util.List;
 import org.springframework.stereotype.Service;
-import dto.AddReviewDto;
-import dto.EditReviewDto;
 import dto.GetReviewsDto;
 import dto.RemoveReviewDto;
 import entity.Review;
+import entity.ReviewId;
 import repository.ClientReviewRepository;
 import repository.FreelancerReviewRepository;
 
@@ -29,41 +28,30 @@ public class ReviewService {
         }
     }
 
-    public void addReview(AddReviewDto dto) {
-        Review review = new Review();
-        review.setRating(dto.rating);
-        review.setDetails(dto.details);
-        review.setAuthorId(dto.authorId);
-
-        if (dto.isClient) {
-            freelancerReviewRepository.add(dto.revieweeId, review);
+    public void addReview(Review review, boolean isClient) {
+        if (isClient) {
+            freelancerReviewRepository.add(review);
         }
         else {
-            clientReviewRepository.add(dto.revieweeId, review);
+            clientReviewRepository.add(review);
         }
     }
 
-    public void editReview(EditReviewDto dto) {
-        Review review = new Review();
-        review.setId(dto.id);
-        review.setRating(dto.rating);
-        review.setDetails(dto.details);
-        review.setAuthorId(dto.authorId);
-
-        if (dto.isClient) {
-            freelancerReviewRepository.update(dto.revieweeId, review);
+    public void editReview(Review review, boolean isClient) {
+        if (isClient) {
+            freelancerReviewRepository.update(review);
         }
         else {
-            clientReviewRepository.update(dto.revieweeId, review);
+            clientReviewRepository.update(review);
         }
     }
 
-    public void removeReview(RemoveReviewDto dto) {
-        if (dto.isClient) {
-            freelancerReviewRepository.remove(dto.revieweeId, dto.reviewId);
+    public void removeReview(ReviewId id, boolean isClient) {
+        if (isClient) {
+            freelancerReviewRepository.remove(id);
         }
         else {
-            clientReviewRepository.remove(dto.revieweeId, dto.reviewId);
+            clientReviewRepository.remove(id);
         }
     }
 }

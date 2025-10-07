@@ -13,14 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import dto.AddReviewRequestDto;
 import dto.PermissionCheckResultDto;
-import dto.EditReviewDto;
 import dto.EditReviewRequestDto;
 import dto.GetReviewsDto;
-import dto.RemoveReviewDto;
 import dto.RemoveReviewRequestDto;
 import dto.ValidationResultDto;
-import dto.AddReviewDto;
 import entity.Review;
+import entity.ReviewId;
 import enumerator.PermissionStatus;
 import service.ReviewPermissionService;
 import service.ReviewService;
@@ -60,6 +58,7 @@ public class ReviewController {
 
         // construct & validate review
         Review review = new Review();
+        review.setId(new ReviewId(requestDto.revieweeId));
         review.setRating(requestDto.rating);
         review.setDetails(requestDto.details);
         review.setAuthorId(authorId);
@@ -70,15 +69,7 @@ public class ReviewController {
         } 
 
         // add review
-        AddReviewDto addReviewDto = new AddReviewDto();
-        addReviewDto.setRating(requestDto.rating);
-        addReviewDto.setDetails(requestDto.details);
-        addReviewDto.setAuthorId(authorId);
-        addReviewDto.setClient(isClient);
-        addReviewDto.setRevieweeId(requestDto.revieweeId);
-
-        reviewService.addReview(addReviewDto);
-
+        reviewService.addReview(review, isClient);
         return ResponseEntity.ok().build();
     }
 
@@ -95,7 +86,7 @@ public class ReviewController {
 
         // construct & validate review
         Review review = new Review();
-        review.setId(requestDto.id);
+        review.setId(new ReviewId(requestDto.revieweeId, requestDto.id));
         review.setRating(requestDto.rating);
         review.setDetails(requestDto.details);
         review.setAuthorId(authorId);
@@ -106,16 +97,7 @@ public class ReviewController {
         } 
         
         // edit review
-        EditReviewDto editReviewDto = new EditReviewDto();
-        editReviewDto.setId(requestDto.id);
-        editReviewDto.setRating(requestDto.rating);
-        editReviewDto.setDetails(requestDto.details);
-        editReviewDto.setAuthorId(authorId);
-        editReviewDto.setClient(isClient);
-        editReviewDto.setRevieweeId(requestDto.revieweeId);
-
-        reviewService.editReview(editReviewDto);
-
+        reviewService.editReview(review, isClient);
         return ResponseEntity.ok().build();
     }
 
@@ -130,15 +112,9 @@ public class ReviewController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
         
-        // delete review       
-        RemoveReviewDto removeReviewDto = new RemoveReviewDto();
-        removeReviewDto.setRevieweeId(requestDto.revieweeId);
-        removeReviewDto.setReviewId(requestDto.reviewId);
-        removeReviewDto.setAuthorId(authorId);
-        removeReviewDto.setClient(isClient);
-
-        reviewService.removeReview(removeReviewDto);
-
+        // delete review     
+        ReviewId id = new ReviewId(requestDto.revieweeId, requestDto.reviewId);
+        reviewService.removeReview(id, isClient);
         return ResponseEntity.ok().build();
     }
 }

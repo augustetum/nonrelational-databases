@@ -5,6 +5,7 @@ import java.util.function.Function;
 import org.springframework.stereotype.Service;
 import dto.ValidationResultDto;
 import entity.Review;
+import entity.ReviewId;
 
 @Service
 public class ReviewValidationService {
@@ -15,7 +16,7 @@ public class ReviewValidationService {
         }
 
         List<Function<Review, ValidationResultDto>> validators = List.of(
-            r -> validateId(r.getId(), idRequired),
+            r -> validateId(r.getId()),
             r -> validateRating(r.getRating()),
             r -> validateDetails(r.getDetails())
         );
@@ -27,10 +28,20 @@ public class ReviewValidationService {
             .orElse(ValidationResultDto.valid());
     }
 
-    private ValidationResultDto validateId(String id, boolean idRequired) {
-        if (idRequired && id == null)
+    private ValidationResultDto validateId(ReviewId id) {
+        if (id == null)
         {
             return ValidationResultDto.invalid("Review id can't be null.");
+        }
+
+        if (id.revieweeId() == null)
+        {
+            return ValidationResultDto.invalid("Part of review id is missing: reviewee id can't be null.");
+        }
+
+        if (id.reviewId() == null)
+        {
+            return ValidationResultDto.invalid("Part of review id is missing: review id can't be null.");
         }
 
         return ValidationResultDto.valid();

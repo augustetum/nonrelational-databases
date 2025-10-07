@@ -5,6 +5,7 @@ import service.BookingService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +28,7 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
     
-    @GetMapping("/clients/{clientId}")
+    @GetMapping("/client/{clientId}")
     public ResponseEntity<List<Booking>> getByClientId(@PathVariable String clientId){
         List<Booking> bookings = bookingService.getByClientId(clientId);
         return ResponseEntity.ok(bookings);
@@ -42,6 +43,12 @@ public class BookingController {
     @PutMapping("/{bookingId}")
     public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody Booking updatedBooking){
         bookingService.updateBooking(bookingId, updatedBooking);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{bookingId}")
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId){
+        bookingService.deleteBooking(bookingId);
         return ResponseEntity.ok().build();
     }
 }

@@ -29,4 +29,8 @@ public class BookingService {
     public void updateBooking(String bookingId, Booking updatedBooking){
         repository.update(bookingId, updatedBooking);
     }
+
+    public void deleteBooking(String bookingId){
+        repository.delete(bookingId);
+    }
 }

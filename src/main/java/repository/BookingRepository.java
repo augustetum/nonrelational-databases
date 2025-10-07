@@ -61,6 +61,11 @@ public class BookingRepository {
         dbContext.bookings.updateOne(filter, updates);
     }
 
+    public void delete(String bookingId){
+        Bson filter = Filters.eq("_id", bookingId);
+        dbContext.bookings.deleteOne(filter);
+    }
+
     public Booking documentToBooking(Document document) {
         Booking booking = new Booking();
 

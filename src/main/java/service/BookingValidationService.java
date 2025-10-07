@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
 
+import dto.PermissionCheckResultDto;
 import dto.ValidationResultDto;
 import entity.Booking;
 import entity.Client;
@@ -33,19 +34,7 @@ public class BookingValidationService {
                 .findFirst()
                 .orElse(ValidationResultDto.valid());
     }
-/*
-    // gettint visus freelancerio bookingus ir paieskot kur atitiktu date??
-    public boolean isFree(String freelancerId, Date time){
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        calendar.setTime(time);
 
-        int day = calendar.get(Calendar.DAY_OF_MONTH);
-        int month = calendar.get(Calendar.MONTH);
-        int year = calendar.get(Calendar.YEAR);
-
-        
-    }
-*/
     public ValidationResultDto validateTime(Date time){
         Date now = new Date();
         long sixHoursInMillis = 6L * 60 * 60 * 1000;
@@ -88,12 +77,6 @@ public class BookingValidationService {
         if(clientId==null){
             return ValidationResultDto.invalid("Client ID cannot be null");
         }
-/*
-        Optional<Client> client = ClientRepository.getById(clientId);
-        if(!client.isPresent()){
-            return ValidationResultDto.invalid("Client does not exist");
-        }
-*/
         return ValidationResultDto.valid();
     }
 
@@ -101,12 +84,12 @@ public class BookingValidationService {
         if(freelancerId==null){
             return ValidationResultDto.invalid("Freelancer ID cannot be null");
         }
-/*
-        Optional<Freelancer> freelancer = FreelancerRepository.getById(freelancerId);
+
+        Optional<Client> freelancer = freelancerRepository.getById(freelancerId);
         if(!freelancer.isPresent()){
-            return ValidationResultDto.invalid("Client does not exist");
+            return ValidationResultDto.invalid("Freelancers with specified ID does not exist");
         }
-*/
+
         return ValidationResultDto.valid();
     }
 }

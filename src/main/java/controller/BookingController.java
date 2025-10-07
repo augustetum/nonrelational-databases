@@ -1,6 +1,7 @@
 package controller;
 
 import entity.Booking;
+import service.BookingPermissionService;
 import service.BookingService;
 import service.BookingValidationService;
 
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import dto.PermissionCheckResultDto;
 import dto.ValidationResultDto;
 
 import java.util.List;
@@ -29,6 +31,9 @@ public class BookingController {
 
     @Autowired
     private BookingValidationService validationService;
+
+    @Autowired
+    private BookingPermissionService permissionService;
 
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
@@ -52,21 +57,27 @@ public class BookingController {
     // deletint gali abu bet su date validation - jei liko 6hr deletint ar editint nebegalima
     // updatint gali tik client
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody Booking booking){
+    public ResponseEntity<?> createBooking(@RequestBody Booking booking, String userId, boolean isClient){
+        //check if permissions are okay
+        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(booking.getClientId(), booking.getFreelancerId(), userId, isClient, booking);
+        if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
+
+        //check if there are no null or invalid fields
         ValidationResultDto validationResult = validationService.validate(booking);
         if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
 
+        //if everything is intact, create a booking
         bookingService.createBooking(booking);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{bookingId}")
-    public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody Booking updatedBooking){
+    public ResponseEntity<?> updateBooking(@PathVariable String bookingId, String userId, @RequestBody Booking updatedBooking){
         Booking booking = bookingService.getById(bookingId);
 
-        updatedBooking.setClientId(booking.getClientId());
-        updatedBooking.setFreelancerId(booking.getFreelancerId());
-        
+        PermissionCheckResultDto permissionResult = permissionService.canUpdateBooking(userId, booking, updatedBooking);
+        if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
+
         ValidationResultDto validationResult = validationService.validate(updatedBooking);
         if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
 
@@ -75,7 +86,14 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId){
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, String userId){
+        PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingService.getById(bookingId), userId);
+
+        if(permissionResult.isDenied())
+        {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
+        }
+        
         bookingService.deleteBooking(bookingId);
         return ResponseEntity.ok().build();
     }

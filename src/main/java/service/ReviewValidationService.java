@@ -18,7 +18,8 @@ public class ReviewValidationService {
         List<Function<Review, ValidationResultDto>> validators = List.of(
             r -> validateId(r.getId()),
             r -> validateRating(r.getRating()),
-            r -> validateDetails(r.getDetails())
+            r -> validateDetails(r.getDetails()),
+            r -> validateAuthorId(r.getAuthorId())
         );
 
         return validators.stream()
@@ -62,6 +63,14 @@ public class ReviewValidationService {
     private ValidationResultDto validateDetails(String details) {
         if (details == null || details.isBlank()) {
             return ValidationResultDto.invalid("Review can't be empty.");
+        }
+
+        return ValidationResultDto.valid();
+    }
+
+    private ValidationResultDto validateAuthorId(String authorId) {
+        if (authorId == null) {
+            return ValidationResultDto.invalid("Author id can't be null.");
         }
 
         return ValidationResultDto.valid();

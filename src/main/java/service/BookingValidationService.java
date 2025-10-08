@@ -84,12 +84,12 @@ public class BookingValidationService {
         if(freelancerId==null){
             return ValidationResultDto.invalid("Freelancer ID cannot be null");
         }
-
+/*
         Optional<Client> freelancer = freelancerRepository.getById(freelancerId);
         if(!freelancer.isPresent()){
             return ValidationResultDto.invalid("Freelancers with specified ID does not exist");
         }
-
+*/
         return ValidationResultDto.valid();
     }
 }

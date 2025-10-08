@@ -3,19 +3,21 @@ package service;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
 import dto.PermissionCheckResultDto;
 import entity.Booking;
-import entity.Client;
 import repository.BookingRepository;
 
 @Service
 public class BookingPermissionService {
 
     BookingRepository bookingRepository;
+
+    public BookingPermissionService(BookingRepository bookingRepository){
+        this.bookingRepository = bookingRepository;
+    }
 
     public boolean isFree(List<Booking> existingBookings, Booking potentialBooking){
         
@@ -65,7 +67,7 @@ public class BookingPermissionService {
         }
 
         if(clientId!=userId){
-            return PermissionCheckResultDto.invalid("Users cannot create bookings for other users.")
+            return PermissionCheckResultDto.invalid("Users cannot create bookings for other users.");
         }
 
         if(!isFree(bookingRepository.getByFreelancerId(freelancerId), potentialBooking)){

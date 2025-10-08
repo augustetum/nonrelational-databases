@@ -16,14 +16,3 @@ public class Booking {
     private String clientId;
     private String freelancerId;
 }
-
-/*
-
-- istraukt konkretaus user'io booking'us 
-
-- pakurt nauja bookinga
-
-- pakeisti booking'o detales
-
-- istrint (cancel) booking'a
- */

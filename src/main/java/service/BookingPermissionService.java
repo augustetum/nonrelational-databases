@@ -53,6 +53,8 @@ public class BookingPermissionService {
         long sixHoursInMillis = 6L * 60 * 60 * 1000;
         Date sixHoursFromNow = new Date(now.getTime() + sixHoursInMillis);
 
+        System.out.println(sixHoursFromNow);
+
         if(bookingDate.before(sixHoursFromNow)){
             return true;
         }
@@ -60,7 +62,7 @@ public class BookingPermissionService {
     }
 
     public PermissionCheckResultDto canCreateBooking(String freelancerId, String userId, boolean isClient, CreateBookingRequestDto potentialBooking){
-        if(userId == freelancerId){
+        if(userId.equals(freelancerId)){
         return PermissionCheckResultDto.invalid("Freelancers are not allowed to hire themselves.");
         }
 
@@ -81,9 +83,6 @@ public class BookingPermissionService {
             return PermissionCheckResultDto.invalid("Booking with this ID does not exist.");
         }
 
-        System.out.println(userId);
-        System.out.println(booking.getClientId());
-
         if(!userId.equals(booking.getClientId())){
         return PermissionCheckResultDto.invalid("Users cannot edit other users' bookings.");
         }
@@ -99,14 +98,18 @@ public class BookingPermissionService {
         return PermissionCheckResultDto.valid();
     } 
 
-    public PermissionCheckResultDto canDeleteBooking(String bookingId, String userId){
+    public PermissionCheckResultDto canDeleteBooking(String bookingId, String userId, boolean isClient){
         Booking booking = bookingRepository.getById(bookingId);
 
         if(booking == null){
             return PermissionCheckResultDto.invalid("Booking with this ID does not exist.");
         }
 
-        if(!userId.equals(booking.getClientId())){
+        if(isClient && !userId.equals(booking.getClientId())){
+            return PermissionCheckResultDto.invalid("Cannot delete someone else's booking");
+        }
+
+        if(!isClient && !userId.equals(booking.getFreelancerId())){
             return PermissionCheckResultDto.invalid("Cannot delete someone else's booking");
         }
 

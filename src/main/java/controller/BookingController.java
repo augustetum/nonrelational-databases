@@ -56,9 +56,6 @@ public class BookingController {
         return ResponseEntity.ok(booking);
     }
 
-    // add validation for client, bookinga sukurt gali tik client, ensure all fields are not null ir kad ta diena freelanceris neturi daugiau jokio bookingo?? bet clientas gali turet kelis bookingus per diena nes tipo what if daug baldu surinkt
-    // deletint gali abu bet su date validation - jei liko 6hr deletint ar editint nebegalima
-    // updatint gali tik client
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, String userId, boolean isClient){
         //check if permissions are okay
@@ -108,8 +105,8 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, String userId){
-        PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId);
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, String userId, boolean isClient){
+        PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId, isClient);
 
         if(permissionResult.isDenied())
         {

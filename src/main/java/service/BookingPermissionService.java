@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import dto.CreateBookingRequestDto;
 import dto.PermissionCheckResultDto;
 import entity.Booking;
 import repository.BookingRepository;
@@ -19,7 +20,7 @@ public class BookingPermissionService {
         this.bookingRepository = bookingRepository;
     }
 
-    public boolean isFree(List<Booking> existingBookings, Booking potentialBooking){
+    public boolean isFree(List<Booking> existingBookings, CreateBookingRequestDto potentialBooking){
         
         Calendar potentialCal = Calendar.getInstance();
         potentialCal.setTime(potentialBooking.getTime());
@@ -57,17 +58,13 @@ public class BookingPermissionService {
         return false;
     }
 
-    public PermissionCheckResultDto canCreateBooking(String clientId, String freelancerId, String userId, boolean isClient, Booking potentialBooking){
+    public PermissionCheckResultDto canCreateBooking(String freelancerId, String userId, boolean isClient, CreateBookingRequestDto potentialBooking){
         if(userId == freelancerId){
         return PermissionCheckResultDto.invalid("Freelancers are not allowed to hire themselves.");
         }
 
         if(!isClient){
             return PermissionCheckResultDto.invalid("Only clients are allowed to create bookings.");
-        }
-
-        if(clientId!=userId){
-            return PermissionCheckResultDto.invalid("Users cannot create bookings for other users.");
         }
 
         if(!isFree(bookingRepository.getByFreelancerId(freelancerId), potentialBooking)){
@@ -77,7 +74,12 @@ public class BookingPermissionService {
         return PermissionCheckResultDto.valid();
     } 
 
-    public PermissionCheckResultDto canUpdateBooking(String clientId, Booking booking, Booking updatedBooking){
+    public PermissionCheckResultDto canUpdateBooking(String clientId, String bookingId, Booking updatedBooking){
+        Booking booking = bookingRepository.getById(bookingId);
+        if(booking == null){
+            return PermissionCheckResultDto.invalid("Booking with this ID does not exist.");
+        }
+
         if(clientId != updatedBooking.getClientId()){
         return PermissionCheckResultDto.invalid("Users cannot edit other users' bookings.");
         }
@@ -91,19 +93,25 @@ public class BookingPermissionService {
         }
 
         if(tooLate(booking.getTime())){
-            return PermissionCheckResultDto.invalid("Cannot edit booking details less than 6 hours before the booking time");
+            return PermissionCheckResultDto.invalid("Cannot edit booking less than 6 hours before the booking time");
         }
 
         return PermissionCheckResultDto.valid();
     } 
 
-    public PermissionCheckResultDto canDeleteBooking(Booking booking, String userId){
+    public PermissionCheckResultDto canDeleteBooking(String bookingId, String userId){
+        Booking booking = bookingRepository.getById(bookingId);
+
+        if(booking == null){
+            return PermissionCheckResultDto.invalid("Booking with this ID does not exist.");
+        }
+
         if(userId != booking.getClientId()){
             return PermissionCheckResultDto.invalid("Cannot delete someone else's booking");
         }
 
         if(tooLate(booking.getTime())){
-            return PermissionCheckResultDto.invalid("Cannot delete booking details less than 6 hours before the booking time");
+            return PermissionCheckResultDto.invalid("Cannot delete booking less than 6 hours before the booking time");
         }
 
         return PermissionCheckResultDto.valid();

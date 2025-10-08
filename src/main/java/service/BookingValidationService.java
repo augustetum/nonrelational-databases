@@ -3,29 +3,25 @@ package service;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.TimeZone;
 import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
 
-import dto.PermissionCheckResultDto;
+import dto.CreateBookingRequestDto;
 import dto.ValidationResultDto;
-import entity.Booking;
-import entity.Client;
 
 @Service
 public class BookingValidationService {
-    public ValidationResultDto validate(Booking booking) {
+    public ValidationResultDto validate(CreateBookingRequestDto booking) {
         if (booking == null) {
             return ValidationResultDto.invalid("Booking can't be null.");
         }
 
-        List<Function<Booking, ValidationResultDto>> validators = List.of(
+        List<Function<CreateBookingRequestDto, ValidationResultDto>> validators = List.of(
                 b -> validateTime(b.getTime()),
                 b -> validateAddress(b.getAddress()),
                 b -> validateDetails(b.getDetails()),
-                b -> validateClientId(b.getClientId()),
                 b -> validateFreelancerId(b.getFreelancerId()));
 
         return validators.stream()
@@ -73,23 +69,10 @@ public class BookingValidationService {
         return ValidationResultDto.valid();
     }
 
-    public ValidationResultDto validateClientId(String clientId){
-        if(clientId==null){
-            return ValidationResultDto.invalid("Client ID cannot be null");
-        }
-        return ValidationResultDto.valid();
-    }
-
     public ValidationResultDto validateFreelancerId(String freelancerId){
         if(freelancerId==null){
             return ValidationResultDto.invalid("Freelancer ID cannot be null");
         }
-/*
-        Optional<Client> freelancer = freelancerRepository.getById(freelancerId);
-        if(!freelancer.isPresent()){
-            return ValidationResultDto.invalid("Freelancers with specified ID does not exist");
-        }
-*/
         return ValidationResultDto.valid();
     }
 }

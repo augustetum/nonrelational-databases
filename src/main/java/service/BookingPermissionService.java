@@ -53,8 +53,6 @@ public class BookingPermissionService {
         long sixHoursInMillis = 6L * 60 * 60 * 1000;
         Date sixHoursFromNow = new Date(now.getTime() + sixHoursInMillis);
 
-        System.out.println(sixHoursFromNow);
-
         if(bookingDate.before(sixHoursFromNow)){
             return true;
         }

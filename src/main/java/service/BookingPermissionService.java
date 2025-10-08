@@ -61,15 +61,16 @@ public class BookingPermissionService {
         return false;
     }
 
-    public PermissionCheckResultDto canCreateBooking(String freelancerId, String userId, boolean isClient, CreateBookingRequestDto potentialBooking){
-        if(userId.equals(freelancerId)){
+    public PermissionCheckResultDto canCreateBooking(String freelancerId, String clientId, CreateBookingRequestDto potentialBooking){
+        if(clientId.equals(freelancerId)){
         return PermissionCheckResultDto.invalid("Freelancers are not allowed to hire themselves.");
         }
-
-        if(!isClient){
+/* commentinu out nes dar neturim client padaryto lol
+        Client client = clientRepository.getById(clientId);
+        if(client == null){
             return PermissionCheckResultDto.invalid("Only clients are allowed to create bookings.");
         }
-
+*/
         if(!isFree(bookingRepository.getByFreelancerId(freelancerId), potentialBooking.getTime())){
             return PermissionCheckResultDto.invalid("The requested freelancer is already booked on that day");
         }
@@ -77,13 +78,13 @@ public class BookingPermissionService {
         return PermissionCheckResultDto.valid();
     } 
 
-    public PermissionCheckResultDto canUpdateBooking(String userId, String bookingId, EditBookingRequestDto updatedBooking){
+    public PermissionCheckResultDto canUpdateBooking(String clientId, String bookingId, EditBookingRequestDto updatedBooking){
         Booking booking = bookingRepository.getById(bookingId);
         if(booking == null){
             return PermissionCheckResultDto.invalid("Booking with this ID does not exist.");
         }
 
-        if(!userId.equals(booking.getClientId())){
+        if(!clientId.equals(booking.getClientId())){
         return PermissionCheckResultDto.invalid("Users cannot edit other users' bookings.");
         }
 
@@ -98,18 +99,14 @@ public class BookingPermissionService {
         return PermissionCheckResultDto.valid();
     } 
 
-    public PermissionCheckResultDto canDeleteBooking(String bookingId, String userId, boolean isClient){
+    public PermissionCheckResultDto canDeleteBooking(String bookingId, String userId){
         Booking booking = bookingRepository.getById(bookingId);
 
         if(booking == null){
             return PermissionCheckResultDto.invalid("Booking with this ID does not exist.");
         }
 
-        if(isClient && !userId.equals(booking.getClientId())){
-            return PermissionCheckResultDto.invalid("Cannot delete someone else's booking");
-        }
-
-        if(!isClient && !userId.equals(booking.getFreelancerId())){
+        if(!userId.equals(booking.getFreelancerId()) && !userId.equals(booking.getClientId())){
             return PermissionCheckResultDto.invalid("Cannot delete someone else's booking");
         }
 

@@ -57,9 +57,9 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, String userId, boolean isClient){
+    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, String clientId, String freelancerId){
         //check if permissions are okay
-        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(bookingRequest.getFreelancerId(), userId, isClient, bookingRequest);
+        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(freelancerId, clientId, bookingRequest);
         if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
         //if everything is intact, create a booking
@@ -68,8 +68,8 @@ public class BookingController {
         booking.setTime(bookingRequest.getTime());
         booking.setAddress(bookingRequest.getAddress());
         booking.setDetails(bookingRequest.getDetails());
-        booking.setClientId(userId);
-        booking.setFreelancerId(bookingRequest.getFreelancerId());
+        booking.setClientId(clientId);
+        booking.setFreelancerId(freelancerId);
 
          //check if there are no null or invalid fields
         ValidationResultDto validationResult = validationService.validate(booking);
@@ -105,8 +105,8 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, String userId, boolean isClient){
-        PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId, isClient);
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, String userId){
+        PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId);
 
         if(permissionResult.isDenied())
         {

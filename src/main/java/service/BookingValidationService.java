@@ -8,17 +8,17 @@ import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
 
-import dto.CreateBookingRequestDto;
 import dto.ValidationResultDto;
+import entity.Booking;
 
 @Service
 public class BookingValidationService {
-    public ValidationResultDto validate(CreateBookingRequestDto booking) {
+    public ValidationResultDto validate(Booking booking) {
         if (booking == null) {
             return ValidationResultDto.invalid("Booking can't be null.");
         }
 
-        List<Function<CreateBookingRequestDto, ValidationResultDto>> validators = List.of(
+        List<Function<Booking, ValidationResultDto>> validators = List.of(
                 b -> validateTime(b.getTime()),
                 b -> validateAddress(b.getAddress()),
                 b -> validateDetails(b.getDetails()),

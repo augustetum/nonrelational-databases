@@ -19,7 +19,6 @@ import com.mongodb.client.model.Updates;
 
 import config.MongoDbContext;
 import dto.ClientDetailsDto;
-import dto.EditClientDetailsDto;
 import entity.Client;
 import util.IdentifierGenerator;
 
@@ -80,14 +79,13 @@ public class ClientRepository {
         collection.insertOne(document);
     }
 
-    public void edit(String clientId, EditClientDetailsDto client) {
+    public void update(String clientId, Client client) {
         Bson filter = Filters.eq("_id", clientId);
         Bson updates = Updates.combine(
                 Updates.set("firstName", client.getFirstName()),
                 Updates.set("lastName", client.getLastName()),
                 Updates.set("city", client.getCity()),
-                Updates.set("phoneNumber", client.getPhoneNumber()),
-                Updates.set("email", client.getEmail()));
+                Updates.set("phoneNumber", client.getPhoneNumber()));
         collection.updateOne(filter, updates);
     }
 

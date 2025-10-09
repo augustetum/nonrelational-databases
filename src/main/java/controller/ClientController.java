@@ -14,9 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import dto.ClientDetailsDto;
 import dto.EditClientDetailsDto;
-import dto.PermissionCheckResultDto;
-import service.ClientPermissionService;
+import dto.ValidationResultDto;
+import entity.Client;
 import service.ClientService;
+import service.ClientValidationService;
 import service.CustomClientDetails;
 
 @RestController
@@ -26,7 +27,7 @@ public class ClientController {
     private ClientService clientService;
 
     @Autowired
-    private ClientPermissionService permissionService;
+    private ClientValidationService validationService;
 
     @GetMapping
     public ResponseEntity<?> getClientDetails(String userId) {
@@ -38,17 +39,31 @@ public class ClientController {
     public ResponseEntity<?> editClientDetails(Authentication authentication, @RequestBody EditClientDetailsDto clientDetailsDto){
         CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String clientId = userDetails.getUser().getId();
+        String email = userDetails.getUser().getEmail();
+        String password = userDetails.getUser().getPassword();
 
-        PermissionCheckResultDto permissionResult = permissionService.canEditClient(clientId, clientDetailsDto);
-        if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
-        
+        Client client = new Client();
+        client.setId(clientId);
+        client.setFirstName(clientDetailsDto.getFirstName());
+        client.setLastName(clientDetailsDto.getLastName());
+        client.setCity(clientDetailsDto.getCity());
+        client.setPhoneNumber(client.getPhoneNumber());
+        client.setEmail(email);
+        client.setPassword(password);
+
+        ValidationResultDto validationResult = validationService.validate(client);
+        if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+
         clientService.editClientDetails(clientId, clientDetailsDto);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteClient(String userId){
-        clientService.deleteClient(userId);
+    public ResponseEntity<?> deleteClient(Authentication authentication){
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String clientId = userDetails.getUser().getId();
+
+        clientService.deleteClient(clientId);
         return ResponseEntity.ok().build();
     }
 }

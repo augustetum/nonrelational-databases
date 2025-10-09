@@ -5,7 +5,6 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import dto.ClientDetailsDto;
-import dto.EditClientDetailsDto;
 import entity.Client;
 import repository.ClientRepository;
 
@@ -26,8 +25,8 @@ public class ClientService {
         clientRepository.add(client);
     }
 
-    public void editClientDetails(String userId, EditClientDetailsDto client){
-        clientRepository.edit(userId, client);
+    public void editClientDetails(String userId, Client client){
+        clientRepository.update(userId, client);
     }
 
     public void deleteClient(String userId){

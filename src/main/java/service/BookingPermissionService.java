@@ -11,11 +11,13 @@ import dto.EditBookingRequestDto;
 import dto.PermissionCheckResultDto;
 import entity.Booking;
 import repository.BookingRepository;
+import repository.ClientRepository;
 
 @Service
 public class BookingPermissionService {
 
     BookingRepository bookingRepository;
+    ClientRepository clientRepository;
 
     public BookingPermissionService(BookingRepository bookingRepository){
         this.bookingRepository = bookingRepository;
@@ -63,12 +65,11 @@ public class BookingPermissionService {
         if(clientId.equals(freelancerId)){
         return PermissionCheckResultDto.invalid("Freelancers are not allowed to hire themselves.");
         }
-/* commentinu out nes dar neturim client padaryto lol
-        Client client = clientRepository.getById(clientId);
-        if(client == null){
+
+        if(clientRepository.exists(clientId)){
             return PermissionCheckResultDto.invalid("Only clients are allowed to create bookings.");
         }
-*/
+
         if(!isFree(bookingRepository.getByFreelancerId(freelancerId), potentialBooking.getTime())){
             return PermissionCheckResultDto.invalid("The requested freelancer is already booked on that day");
         }

@@ -33,9 +33,9 @@ public class ClientRepository {
 
     PasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    public Optional<ClientDetailsDto> getDetails(String freelancerId) {
+    public Optional<ClientDetailsDto> getDetails(String clientId) {
         List<Bson> pipeline = Arrays.asList(
-                Aggregates.match(Filters.eq("_id", freelancerId)),
+                Aggregates.match(Filters.eq("_id", clientId)),
                 Aggregates.project(Projections.fields(
                         Projections.computed("averageRating", new Document("$ifNull", Arrays.asList(
                                 new Document("$avg", "$reviews.rating"),
@@ -53,6 +53,25 @@ public class ClientRepository {
         ClientDetailsDto clientDetails = convertDocumentToClientDetails(document);
 
         return Optional.of(clientDetails);
+    }
+
+    public Optional<Client> findByEmail(String email) {
+        Optional<Client> maybeClient = collection.find()
+                .into(new ArrayList<Document>())
+                .stream()
+                .map(this::convertDocumentToClient)
+                .toList().stream()
+                .filter(client -> client.getEmail().equals(email))
+                .findFirst();
+        return maybeClient;
+    }
+
+    public boolean exists(String clientId) {
+        Optional<ClientDetailsDto> client = getDetails(clientId);
+        if (client.isPresent())
+            return true;
+        else
+            return false;
     }
 
     public void add(Client client) {
@@ -88,6 +107,33 @@ public class ClientRepository {
         document.append("phoneNumber", client.getPhoneNumber());
         document.append("city", client.getCity());
         return document;
+    }
+
+        private Client convertDocumentToClient(Document document) {
+        Client client = new Client();
+
+        String id = document.getString("_id");
+        client.setId(id);
+
+        String firstName = document.getString("firstName");
+        client.setFirstName(firstName);
+
+        String lastName = document.getString("lastName");
+        client.setLastName(lastName);
+
+        String email = document.getString("email");
+        client.setEmail(email);
+
+        //double rating = document.getDouble("averageRating");
+        client.setRating(0);
+
+        long phoneNumber = document.getLong("phoneNumber");
+        client.setPhoneNumber(phoneNumber);
+
+        String city = document.getString("city");
+        client.setCity(city);
+
+        return client;
     }
 
     private ClientDetailsDto convertDocumentToClientDetails(Document document) {

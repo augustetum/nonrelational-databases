@@ -4,7 +4,7 @@ import entity.Booking;
 import service.BookingPermissionService;
 import service.BookingService;
 import service.BookingValidationService;
-import service.CustomUserDetails;
+import service.CustomClientDetails;
 import util.IdentifierGenerator;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +63,7 @@ public class BookingController {
         if(!isClient) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can create bookings.");
 
         //check if permissions are okay
-                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String clientId = userDetails.getUser().getId();
         String freelancerId = bookingRequest.getFreelancerId();
 
@@ -92,7 +92,7 @@ public class BookingController {
     @PutMapping("/{bookingId}")
     public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody EditBookingRequestDto updatedBooking, Authentication authentication){
         //check if user can edit the provided booking
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String userId = userDetails.getUser().getId();
 
         PermissionCheckResultDto permissionResult = permissionService.canUpdateBooking(userId, bookingId, updatedBooking);
@@ -117,11 +117,11 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, Authentication authentication){
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, boolean isClient, Authentication authentication){
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String userId = userDetails.getUser().getId();
-        
+
         PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId);
 
         if(permissionResult.isDenied())

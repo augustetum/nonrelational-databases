@@ -49,7 +49,7 @@ public class ClientAuthService {
         clientRepository.add(client);
 
         // Generate JWT token
-        var jwtToken = jwtService.generateToken(new CustomUserDetails(client));
+        var jwtToken = jwtService.generateToken(new CustomClientDetails(client));
 
         return new AuthResponse(jwtToken, client.getEmail());
     }
@@ -65,7 +65,7 @@ public class ClientAuthService {
         var client = clientRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        var jwtToken = jwtService.generateToken(new CustomUserDetails(client));
+        var jwtToken = jwtService.generateToken(new CustomClientDetails(client));
 
         return new AuthResponse(jwtToken, client.getEmail());
     }

@@ -8,12 +8,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 
-public class CustomUserDetails implements UserDetails {
+public class CustomClientDetails implements UserDetails {
 
-    private final Client user;
+    private final Client client;
 
-    public CustomUserDetails(Client user) {
-        this.user = user;
+    public CustomClientDetails(Client client) {
+        this.client = client;
     }
 
     @Override
@@ -25,12 +25,12 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getPassword() {
-        return user.getPassword();
+        return client.getPassword();
     }
 
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return client.getEmail();
     }
 
     @Override
@@ -49,6 +49,6 @@ public class CustomUserDetails implements UserDetails {
     }
 
     public Client getUser() {
-        return user;
+        return client;
     }
 }

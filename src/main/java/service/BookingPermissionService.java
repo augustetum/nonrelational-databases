@@ -61,12 +61,8 @@ public class BookingPermissionService {
         return false;
     }
 
-    public PermissionCheckResultDto canCreateBooking(String freelancerId, String clientId, CreateBookingRequestDto potentialBooking){
-        if(clientRepository.exists(clientId)){
-            return PermissionCheckResultDto.invalid("Only clients are allowed to create bookings.");
-        }
-
-        if(!isFree(bookingRepository.getByFreelancerId(freelancerId), potentialBooking.getTime())){
+    public PermissionCheckResultDto canCreateBooking(CreateBookingRequestDto potentialBooking){
+        if(!isFree(bookingRepository.getByFreelancerId(potentialBooking.getFreelancerId()), potentialBooking.getTime())){
             return PermissionCheckResultDto.invalid("The requested freelancer is already booked on that day");
         }
 

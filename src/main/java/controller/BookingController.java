@@ -68,7 +68,7 @@ public class BookingController {
         String freelancerId = bookingRequest.getFreelancerId();
 
 
-        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(freelancerId, clientId, bookingRequest);
+        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(bookingRequest);
         if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
         //if everything is intact, create a booking
@@ -90,8 +90,11 @@ public class BookingController {
     }
 
     @PutMapping("/{bookingId}")
-    public ResponseEntity<?> updateBooking(@PathVariable String bookingId, String userId, @RequestBody EditBookingRequestDto updatedBooking){
+    public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody EditBookingRequestDto updatedBooking, Authentication authentication){
         //check if user can edit the provided booking
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String userId = userDetails.getUser().getId();
+
         PermissionCheckResultDto permissionResult = permissionService.canUpdateBooking(userId, bookingId, updatedBooking);
         if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
@@ -114,7 +117,11 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, String userId){
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, Authentication authentication){
+
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String userId = userDetails.getUser().getId();
+        
         PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId);
 
         if(permissionResult.isDenied())

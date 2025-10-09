@@ -4,9 +4,11 @@ import entity.Booking;
 import service.BookingPermissionService;
 import service.BookingService;
 import service.BookingValidationService;
+import service.CustomUserDetails;
 import util.IdentifierGenerator;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -57,8 +59,15 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, String clientId, String freelancerId){
+    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, boolean isClient, Authentication authentication){
+        if(!isClient) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can create bookings.");
+
         //check if permissions are okay
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        String clientId = userDetails.getUser().getId();
+        String freelancerId = bookingRequest.getFreelancerId();
+
+
         PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(freelancerId, clientId, bookingRequest);
         if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 

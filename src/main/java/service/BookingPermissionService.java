@@ -62,10 +62,6 @@ public class BookingPermissionService {
     }
 
     public PermissionCheckResultDto canCreateBooking(String freelancerId, String clientId, CreateBookingRequestDto potentialBooking){
-        if(clientId.equals(freelancerId)){
-        return PermissionCheckResultDto.invalid("Freelancers are not allowed to hire themselves.");
-        }
-
         if(clientRepository.exists(clientId)){
             return PermissionCheckResultDto.invalid("Only clients are allowed to create bookings.");
         }

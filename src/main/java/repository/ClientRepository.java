@@ -76,7 +76,6 @@ public class ClientRepository {
 
     public void add(Client client) {
         client.setId(IdentifierGenerator.generateId());
-        client.setPassword(encoder.encode(client.getPassword()));
         Document document = convertClientToDocument(client);
         collection.insertOne(document);
     }
@@ -123,6 +122,9 @@ public class ClientRepository {
 
         String email = document.getString("email");
         client.setEmail(email);
+
+        String password = document.getString("password");
+        client.setPassword(password);
 
         //double rating = document.getDouble("averageRating");
         client.setRating(0);

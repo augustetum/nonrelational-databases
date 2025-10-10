@@ -19,11 +19,11 @@ public class WorkfieldController {
     @Autowired
     private WorkfieldService workfieldService;
 
-    @GetMapping
-    public ResponseEntity<List<Workfield>> getAllWorkfields(){
-        List<Workfield> workfields = workfieldService.getAllWorkfields();
-        return ResponseEntity.ok(workfields);
-    }
+//    @GetMapping
+//    public ResponseEntity<List<Workfield>> getAllWorkfields(){
+//        List<Workfield> workfields = workfieldService.getAllWorkfields();
+//        return ResponseEntity.ok(workfields);
+//    }
 
     @GetMapping("/freelancer/{freelancerId}")
     public ResponseEntity<List<Workfield>> getWorkfieldsByFreelancerId(@PathVariable String freelancerId){

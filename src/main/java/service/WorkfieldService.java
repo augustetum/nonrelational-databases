@@ -16,9 +16,10 @@ public class WorkfieldService {
         this.workfieldRepository = workfieldRepository;
     }
 
-    public List<Workfield> getAllWorkfields(){
-
-    }
+//    public List<Workfield> getAllWorkfields(){
+//        retun
+//
+//    }
 
     public List<Workfield> getWorkfieldsByFreelancerId(String freelancerId){
         List<Workfield> workfields = workfieldRepository.getWorkfieldsByFreelancerId(freelancerId);

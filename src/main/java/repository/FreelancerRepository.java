@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
+import entity.Client;
+import entity.Workfield;
+import entity.Freelancer;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
@@ -13,6 +17,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import config.MongoDbContext;
 import dto.FreelancerDetailsDto;
+import util.IdentifierGenerator;
 
 @Repository
 public class FreelancerRepository {
@@ -21,6 +26,18 @@ public class FreelancerRepository {
     public FreelancerRepository(MongoDbContext dbContext) {
         this.collection = dbContext.freelancers;
     }
+
+    public Optional<Freelancer> findByEmail(String email) {
+        Optional<Freelancer> maybeFreelancer = collection.find()
+                .into(new ArrayList<Document>())
+                .stream()
+                .map(this::convertDocumentToFreelancer)
+                .toList().stream()
+                .filter(freelancer -> freelancer.getEmail().equals(email))
+                .findFirst();
+        return maybeFreelancer;
+    }
+
 
     public Optional<FreelancerDetailsDto> getDetails(String freelancerId) {
         List<Bson> pipeline = Arrays.asList(
@@ -42,6 +59,26 @@ public class FreelancerRepository {
         FreelancerDetailsDto freelancerDetails = convertDocumentToFreelancerDetails(document);
 
         return Optional.of(freelancerDetails);
+    }
+
+    public void add(Freelancer freelancer) {
+        freelancer.setId(IdentifierGenerator.generateId());
+        Document document = convertFreelancerToDocument(freelancer);
+        collection.insertOne(document);
+    }
+
+    private Document convertFreelancerToDocument(Freelancer freelancer) {
+        Document document = new Document();
+        List<Workfield> workfields = new ArrayList<>();
+        document.append("_id", freelancer.getId());
+        document.append("firstName", freelancer.getFirstName());
+        document.append("lastName", freelancer.getLastName());
+        document.append("password", freelancer.getPassword());
+        document.append("email", freelancer.getEmail());
+        document.append("phoneNumber", freelancer.getPhoneNumber());
+        document.append("city", freelancer.getCity());
+        document.append("workfields", workfields);
+        return document;
     }
 
     private FreelancerDetailsDto convertDocumentToFreelancerDetails(Document document) {
@@ -67,4 +104,20 @@ public class FreelancerRepository {
         
         return freelancerDetails;
     }
+
+    private Freelancer convertDocumentToFreelancer(Document document) {
+        return Freelancer.builder()
+                .id(document.getString("_id"))
+                .firstName(document.getString("firstName"))
+                .lastName(document.getString("lastName"))
+                .email(document.getString("email"))
+                .password(document.getString("password"))
+                .rating(0)
+                .phoneNumber(document.getLong("phoneNumber"))
+                .city(document.getString("city"))
+                .build();
+    }
+
+
+
 }

@@ -4,28 +4,29 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import dto.AuthRequest;
 import dto.AuthResponse;
 import dto.RegisterRequest;
-import entity.Client;
-import repository.ClientRepository;
+import entity.Freelancer;
+import repository.FreelancerRepository;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
+import repository.FreelancerRepository;
 
 @Service
-public class ClientAuthService {
+public class FreelancerAuthService {
 
-    private final ClientRepository clientRepository;
+    private final FreelancerRepository freelancerRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public ClientAuthService(
-            ClientRepository clientRepository,
+    public FreelancerAuthService(
+            FreelancerRepository FreelancerRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuthenticationManager authenticationManager
     ) {
-        this.clientRepository = clientRepository;
+        this.freelancerRepository = FreelancerRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
@@ -33,12 +34,12 @@ public class ClientAuthService {
 
     public AuthResponse register(RegisterRequest request) {
         // Check if user already exists
-        if (clientRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (freelancerRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
 
         // Create new user
-        Client client = Client.builder()
+        Freelancer freelancer = Freelancer.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
@@ -47,12 +48,12 @@ public class ClientAuthService {
                 .phoneNumber(request.getPhoneNumber())
                 .build();
 
-        clientRepository.add(client);
+        freelancerRepository.add(freelancer);
 
         // Generate JWT token
-        var jwtToken = jwtService.generateToken(new CustomClientDetails(client));
+        var jwtToken = jwtService.generateToken(new CustomFreelancerDetails(freelancer));
 
-        return new AuthResponse(jwtToken, client.getEmail());
+        return new AuthResponse(jwtToken, freelancer.getEmail());
     }
 
     public AuthResponse authenticate(AuthRequest request) {
@@ -63,11 +64,11 @@ public class ClientAuthService {
                 )
         );
 
-        var client = clientRepository.findByEmail(request.getEmail())
+        var freelancer = freelancerRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        var jwtToken = jwtService.generateToken(new CustomClientDetails(client));
+        var jwtToken = jwtService.generateToken(new CustomFreelancerDetails(freelancer));
 
-        return new AuthResponse(jwtToken, client.getEmail());
+        return new AuthResponse(jwtToken, freelancer.getEmail());
     }
 }

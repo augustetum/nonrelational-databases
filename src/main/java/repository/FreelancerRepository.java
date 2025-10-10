@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import entity.Client;
+import entity.Review;
 import entity.Workfield;
 import entity.Freelancer;
 import org.bson.Document;
@@ -69,6 +70,7 @@ public class FreelancerRepository {
 
     private Document convertFreelancerToDocument(Freelancer freelancer) {
         Document document = new Document();
+        List<Review> reviews = new ArrayList<>();
         List<Workfield> workfields = new ArrayList<>();
         document.append("_id", freelancer.getId());
         document.append("firstName", freelancer.getFirstName());
@@ -78,6 +80,7 @@ public class FreelancerRepository {
         document.append("phoneNumber", freelancer.getPhoneNumber());
         document.append("city", freelancer.getCity());
         document.append("workfields", workfields);
+        document.append("reviews", reviews);
         return document;
     }
 
@@ -106,6 +109,15 @@ public class FreelancerRepository {
     }
 
     private Freelancer convertDocumentToFreelancer(Document document) {
+        Long phoneNumber;
+        Object phoneNumberObj = document.get("phoneNumber");
+        if (phoneNumberObj instanceof String) {
+            phoneNumber = Long.parseLong((String) phoneNumberObj);
+        } else if (phoneNumberObj instanceof Number) {
+            phoneNumber = ((Number) phoneNumberObj).longValue();
+        } else {
+            phoneNumber = 0L; // Default value
+        }
         return Freelancer.builder()
                 .id(document.getString("_id"))
                 .firstName(document.getString("firstName"))
@@ -113,7 +125,7 @@ public class FreelancerRepository {
                 .email(document.getString("email"))
                 .password(document.getString("password"))
                 .rating(0)
-                .phoneNumber(document.getLong("phoneNumber"))
+                .phoneNumber(phoneNumber)
                 .city(document.getString("city"))
                 .build();
     }

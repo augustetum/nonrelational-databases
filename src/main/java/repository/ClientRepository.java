@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import entity.Review;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
@@ -96,6 +97,7 @@ public class ClientRepository {
 
     private Document convertClientToDocument(Client client) {
         Document document = new Document();
+        List<Review> reviews = new ArrayList<>();
         document.append("_id", client.getId());
         document.append("firstName", client.getFirstName());
         document.append("lastName", client.getLastName());
@@ -103,6 +105,7 @@ public class ClientRepository {
         document.append("email", client.getEmail());
         document.append("phoneNumber", client.getPhoneNumber());
         document.append("city", client.getCity());
+        document.append("reviews", reviews);
         return document;
     }
 

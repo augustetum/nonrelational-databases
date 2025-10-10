@@ -1,10 +1,12 @@
 package entity;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @SuperBuilder
+@NoArgsConstructor
 public abstract class User {
     private String id;
     private String firstName;

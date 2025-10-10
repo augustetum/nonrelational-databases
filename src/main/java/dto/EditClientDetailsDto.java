@@ -3,12 +3,9 @@ package dto;
 import lombok.Data;
 
 @Data
-public class ClientDetailsDto {
-    private String id;
+public class EditClientDetailsDto {
     private String firstName;
     private String lastName;
-    private String email;
-    private double rating;
     private long phoneNumber;
     private String city;
 }

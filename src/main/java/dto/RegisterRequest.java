@@ -3,12 +3,11 @@ package dto;
 import lombok.Data;
 
 @Data
-public class ClientDetailsDto {
-    private String id;
+public class RegisterRequest {
     private String firstName;
     private String lastName;
     private String email;
-    private double rating;
-    private long phoneNumber;
+    private String password;
+    private Long phoneNumber;
     private String city;
 }

@@ -4,9 +4,11 @@ import entity.Booking;
 import service.BookingPermissionService;
 import service.BookingService;
 import service.BookingValidationService;
+import service.CustomClientDetails;
 import util.IdentifierGenerator;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -57,9 +59,16 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, String clientId, String freelancerId){
+    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, boolean isClient, Authentication authentication){
+        if(!isClient) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can create bookings.");
+
         //check if permissions are okay
-        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(freelancerId, clientId, bookingRequest);
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String clientId = userDetails.getUser().getId();
+        String freelancerId = bookingRequest.getFreelancerId();
+
+
+        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(bookingRequest);
         if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
         //if everything is intact, create a booking
@@ -81,8 +90,11 @@ public class BookingController {
     }
 
     @PutMapping("/{bookingId}")
-    public ResponseEntity<?> updateBooking(@PathVariable String bookingId, String userId, @RequestBody EditBookingRequestDto updatedBooking){
+    public ResponseEntity<?> updateBooking(@PathVariable String bookingId, @RequestBody EditBookingRequestDto updatedBooking, Authentication authentication){
         //check if user can edit the provided booking
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String userId = userDetails.getUser().getId();
+
         PermissionCheckResultDto permissionResult = permissionService.canUpdateBooking(userId, bookingId, updatedBooking);
         if(permissionResult.isDenied()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
@@ -105,7 +117,11 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, String userId){
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, boolean isClient, Authentication authentication){
+
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String userId = userDetails.getUser().getId();
+
         PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId);
 
         if(permissionResult.isDenied())

@@ -47,14 +47,14 @@ public class ClientController {
         client.setFirstName(clientDetailsDto.getFirstName());
         client.setLastName(clientDetailsDto.getLastName());
         client.setCity(clientDetailsDto.getCity());
-        client.setPhoneNumber(client.getPhoneNumber());
+        client.setPhoneNumber(clientDetailsDto.getPhoneNumber());
         client.setEmail(email);
         client.setPassword(password);
 
         ValidationResultDto validationResult = validationService.validate(client);
         if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
 
-        clientService.editClientDetails(clientId, clientDetailsDto);
+        clientService.editClientDetails(clientId, client);
         return ResponseEntity.ok().build();
     }
 

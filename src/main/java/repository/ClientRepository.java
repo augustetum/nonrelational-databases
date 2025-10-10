@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import entity.Review;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
@@ -96,6 +97,7 @@ public class ClientRepository {
 
     private Document convertClientToDocument(Client client) {
         Document document = new Document();
+        List<Review> reviews = new ArrayList<>();
         document.append("_id", client.getId());
         document.append("firstName", client.getFirstName());
         document.append("lastName", client.getLastName());
@@ -103,37 +105,21 @@ public class ClientRepository {
         document.append("email", client.getEmail());
         document.append("phoneNumber", client.getPhoneNumber());
         document.append("city", client.getCity());
+        document.append("reviews", reviews);
         return document;
     }
 
         private Client convertDocumentToClient(Document document) {
-        Client client = new Client();
-
-        String id = document.getString("_id");
-        client.setId(id);
-
-        String firstName = document.getString("firstName");
-        client.setFirstName(firstName);
-
-        String lastName = document.getString("lastName");
-        client.setLastName(lastName);
-
-        String email = document.getString("email");
-        client.setEmail(email);
-
-        String password = document.getString("password");
-        client.setPassword(password);
-
-        //double rating = document.getDouble("averageRating");
-        client.setRating(0);
-
-        long phoneNumber = document.getLong("phoneNumber");
-        client.setPhoneNumber(phoneNumber);
-
-        String city = document.getString("city");
-        client.setCity(city);
-
-        return client;
+        return Client.builder()
+                .id(document.getString("_id"))
+                .firstName(document.getString("firstName"))
+                .lastName(document.getString("lastName"))
+                .email(document.getString("email"))
+                .password(document.getString("password"))
+                .rating(0)
+                .phoneNumber(document.getLong("phoneNumber"))
+                .city(document.getString("city"))
+                .build();
     }
 
     private ClientDetailsDto convertDocumentToClientDetails(Document document) {

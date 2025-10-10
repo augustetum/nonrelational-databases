@@ -1,21 +1,19 @@
 package entity;
 
-interface User {
-    String getId();
-    String getFirstName();
-    String getLastName();
-    String getEmail();
-    String getPassword();
-    long getPhoneNumber();
-    String getCity();
-    double getRating();
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-    void setId(String id);
-    void setFirstName(String firstName);
-    void setLastName(String lastName);
-    void setEmail(String email);
-    void setPassword(String password);
-    void setPhoneNumber(long phoneNumber);
-    void setCity(String city);
-    void setRating(double rating);
+@Data
+@SuperBuilder
+@NoArgsConstructor
+public abstract class User {
+    private String id;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String password;
+    private long phoneNumber;
+    private String city;
+    private double rating;
 }

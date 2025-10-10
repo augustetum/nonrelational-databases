@@ -38,13 +38,14 @@ public class ClientAuthService {
         }
 
         // Create new user
-        Client client = new Client();
-        client.setEmail(request.getEmail());
-        client.setPassword(passwordEncoder.encode(request.getPassword()));
-        client.setFirstName(request.getFirstName());
-        client.setLastName(request.getLastName());
-        client.setCity(request.getCity());
-        client.setPhoneNumber(request.getPhoneNumber());
+        Client client = Client.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .city(request.getCity())
+                .phoneNumber(request.getPhoneNumber())
+                .build();
 
         clientRepository.add(client);
 

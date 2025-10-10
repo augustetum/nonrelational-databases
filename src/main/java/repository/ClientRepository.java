@@ -55,14 +55,25 @@ public class ClientRepository {
     }
 
     public Optional<Client> findByEmail(String email) {
-        Optional<Client> maybeClient = collection.find()
-                .into(new ArrayList<Document>())
-                .stream()
-                .map(this::convertDocumentToClient)
-                .toList().stream()
-                .filter(client -> client.getEmail().equals(email))
-                .findFirst();
-        return maybeClient;
+        List<Bson> pipeline = Arrays.asList(
+                Aggregates.match(Filters.eq("email", email)),
+                Aggregates.project(Projections.fields(
+                        Projections.computed("averageRating", new Document("$ifNull", Arrays.asList(
+                                new Document("$avg", "$reviews.rating"),
+                                0.0))),
+                        Projections.include("firstName", "lastName", "city", "email", "phoneNumber"))));
+
+        List<Document> documents = collection.aggregate(pipeline)
+                .into(new ArrayList<>());
+
+        if (documents.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Document document = documents.get(0);
+        Client client = convertDocumentToClient(document);
+
+        return Optional.of(client);
     }
 
     public boolean exists(String clientId) {
@@ -124,8 +135,8 @@ public class ClientRepository {
         String password = document.getString("password");
         client.setPassword(password);
 
-        //double rating = document.getDouble("averageRating");
-        client.setRating(0);
+        double rating = document.getDouble("averageRating");
+        client.setRating(rating);
 
         long phoneNumber = document.getLong("phoneNumber");
         client.setPhoneNumber(phoneNumber);

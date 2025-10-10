@@ -54,7 +54,7 @@ public class ClientController {
         ValidationResultDto validationResult = validationService.validate(client);
         if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
 
-        clientService.editClientDetails(clientId, clientDetailsDto);
+        clientService.editClientDetails(clientId, client);
         return ResponseEntity.ok().build();
     }
 

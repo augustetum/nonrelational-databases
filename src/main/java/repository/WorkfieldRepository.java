@@ -97,6 +97,12 @@ public class WorkfieldRepository {
         collection.updateOne(filter, update);
     }
 
+    public void deleteWorkfield(String freelancerId, String workfieldId){
+        Bson filter = Filters.eq("_id", freelancerId);
+        Bson update = new Document("$pull", new Document("workfields", new Document("id", workfieldId)));
+        collection.updateOne(filter, update);
+    }
+
     private Document convertWorkfieldToDocument(Workfield workfield) {
         return new Document()
                 .append("id", workfield.getId())

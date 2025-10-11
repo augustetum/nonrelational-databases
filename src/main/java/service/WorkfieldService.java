@@ -39,4 +39,8 @@ public class WorkfieldService {
     public void editWorkfield(String freelancerId, String workfieldId, EditWorkfieldDto dto){
         workfieldRepository.editWorkfield(freelancerId, workfieldId, dto);
     }
+
+    public void deleteWorkfield(String freelancerId, String workfieldId){
+        workfieldRepository.deleteWorkfield(freelancerId, workfieldId);
+    }
 }

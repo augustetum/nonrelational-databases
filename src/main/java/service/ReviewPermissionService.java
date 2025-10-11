@@ -51,7 +51,7 @@ public class ReviewPermissionService {
         }
 
         Review review = maybeReview.get();
-        if (!requestorId.equals(review.authorId)) {
+        if (!requestorId.equals(review.getAuthorId())) {
             return PermissionCheckResultDto.invalid("Users are not allowed to edit reviews written by other users.");
         }
 
@@ -72,7 +72,7 @@ public class ReviewPermissionService {
         }
 
         Review review = maybeReview.get();
-        if (!requestorId.equals(review.authorId)) {
+        if (!requestorId.equals(review.getAuthorId())) {
             return PermissionCheckResultDto.invalid("Users are not allowed to delete reviews written by other users.");
         }
 

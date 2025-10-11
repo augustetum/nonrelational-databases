@@ -84,7 +84,7 @@ public abstract class ReviewRepository {
     public void add(Review review) {
         Document reviewDocument = convertReviewToDocument(review);
         
-        Bson filter = Filters.eq("_id", review.id.revieweeId());
+        Bson filter = Filters.eq("_id", review.getId().revieweeId());
         Bson updates = Updates.push("reviews", reviewDocument);
 
         collection.updateOne(filter, updates);
@@ -92,13 +92,13 @@ public abstract class ReviewRepository {
 
     public void update(Review review) {
         Bson filter = Filters.and(
-            Filters.eq("_id", review.id.revieweeId()),
-            Filters.eq("reviews._id", review.id.reviewId())
+            Filters.eq("_id", review.getId().revieweeId()),
+            Filters.eq("reviews._id", review.getId().reviewId())
         );
 
         Bson updates = Updates.combine(
-            Updates.set("reviews.$.rating", review.rating),
-            Updates.set("reviews.$.details", review.details)
+            Updates.set("reviews.$.rating", review.getRating()),
+            Updates.set("reviews.$.details", review.getDetails())
         );
 
         collection.updateOne(filter, updates);
@@ -115,10 +115,10 @@ public abstract class ReviewRepository {
 
     protected Document convertReviewToDocument(Review review) {
         Document document = new Document();
-        document.append("_id", review.id.reviewId());
-        document.append("rating", review.rating);
-        document.append("details", review.details);
-        document.append("authorId", review.authorId);
+        document.append("_id", review.getId().reviewId());
+        document.append("rating", review.getRating());
+        document.append("details", review.getDetails());
+        document.append("authorId", review.getAuthorId());
 
         return document;
     }

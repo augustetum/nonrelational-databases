@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-
-import entity.Client;
 import entity.Review;
 import entity.Workfield;
 import entity.Freelancer;

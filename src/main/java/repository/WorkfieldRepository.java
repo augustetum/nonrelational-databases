@@ -50,7 +50,6 @@ public class WorkfieldRepository {
     public List<Workfield> getAllWorkfieldsByCategory(WorkfieldCategory category) {
         Bson filter = Filters.eq("workfields.category", category.name());
         List<Document> freelancerDocs = collection.find(filter).into(new ArrayList<>());
-        List<Workfield> workfields = new ArrayList<>();
 
         return freelancerDocs.stream()
                 .flatMap(freelancerDoc -> {

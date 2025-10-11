@@ -1,5 +1,6 @@
 package repository;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Optional;
 import entity.Review;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.Decimal128;
 import org.springframework.stereotype.Repository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,12 +37,17 @@ public class ClientRepository {
 
     public Optional<ClientDetailsDto> getDetails(String clientId) {
         List<Bson> pipeline = Arrays.asList(
-                Aggregates.match(Filters.eq("_id", clientId)),
-                Aggregates.project(Projections.fields(
-                        Projections.computed("averageRating", new Document("$ifNull", Arrays.asList(
-                                new Document("$avg", "$reviews.rating"),
-                                0.0))),
-                        Projections.include("firstName", "lastName", "city", "email", "phoneNumber"))));
+            Aggregates.match(Filters.eq("_id", clientId)),
+            Aggregates.project(Projections.fields(
+                Projections.computed("averageRating", 
+                    new Document("$ifNull", Arrays.asList(
+                        new Document("$avg", "$reviews.rating"), 
+                        BigDecimal.ZERO
+                    ))
+                ),
+                Projections.include("firstName", "lastName", "city", "email", "phoneNumber")
+            ))
+        );
 
         List<Document> documents = collection.aggregate(pipeline)
                 .into(new ArrayList<>());
@@ -137,7 +144,8 @@ public class ClientRepository {
         String email = document.getString("email");
         clientDetails.setEmail(email);
 
-        double rating = document.getDouble("averageRating");
+        Decimal128 ratingDecimal = document.get("averageRating", Decimal128.class);
+        BigDecimal rating = ratingDecimal.bigDecimalValue();
         clientDetails.setRating(rating);
 
         long phoneNumber = document.getLong("phoneNumber");

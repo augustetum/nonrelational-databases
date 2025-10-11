@@ -1,5 +1,7 @@
 package dto;
 
+import java.math.BigDecimal;
+
 import lombok.Data;
 
 @Data
@@ -8,7 +10,7 @@ public class ClientDetailsDto {
     private String firstName;
     private String lastName;
     private String email;
-    private double rating;
+    private BigDecimal rating;
     private long phoneNumber;
     private String city;
 }

@@ -1,5 +1,6 @@
 package service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
 import org.springframework.stereotype.Service;
@@ -48,12 +49,14 @@ public class ReviewValidationService {
         return ValidationResultDto.valid();
     }
 
-    private ValidationResultDto validateRating(double rating) {
-        if (rating < 0 || rating > 5) {
+    private ValidationResultDto validateRating(BigDecimal rating) {
+        if (rating.compareTo(BigDecimal.valueOf(0)) == -1 || rating.compareTo(BigDecimal.valueOf(5)) == 1) {
             return ValidationResultDto.invalid("Review rating must be between 0 and 5.");
         }
 
-        if (rating % 0.5 != 0) {
+        BigDecimal half = BigDecimal.valueOf(0.5);
+        BigDecimal remainder = rating.remainder(half);
+        if (remainder.compareTo(BigDecimal.ZERO) != 0) {
             return ValidationResultDto.invalid("Review rating must be an increment of 0.5.");
         }
 

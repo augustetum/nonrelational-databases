@@ -1,13 +1,15 @@
 package entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import lombok.Data;
 
 @Data
 public class Review {
-    public ReviewId id;
-    public BigDecimal rating;
-    public String details;
-    public String authorId;
+    private ReviewId id;
+    private LocalDate date;
+    private BigDecimal rating;
+    private String details;
+    private String authorId;
 }

@@ -1,8 +1,10 @@
 package repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.bson.Document;
@@ -11,6 +13,8 @@ import org.bson.types.Decimal128;
 import org.springframework.stereotype.Repository;
 import entity.Review;
 import entity.ReviewId;
+import util.DateConverter;
+
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -82,6 +86,7 @@ public abstract class ReviewRepository {
     }
 
     public void add(Review review) {
+        review.setDate(LocalDate.now());
         Document reviewDocument = convertReviewToDocument(review);
         
         Bson filter = Filters.eq("_id", review.getId().revieweeId());
@@ -97,6 +102,7 @@ public abstract class ReviewRepository {
         );
 
         Bson updates = Updates.combine(
+            Updates.set("reviews.$.date", DateConverter.localDateToDate(LocalDate.now())),
             Updates.set("reviews.$.rating", review.getRating()),
             Updates.set("reviews.$.details", review.getDetails())
         );
@@ -115,7 +121,13 @@ public abstract class ReviewRepository {
 
     protected Document convertReviewToDocument(Review review) {
         Document document = new Document();
+        
         document.append("_id", review.getId().reviewId());
+        
+        LocalDate localDate = review.getDate();
+        Date date = DateConverter.localDateToDate(localDate);
+        document.append("date", date);
+        
         document.append("rating", review.getRating());
         document.append("details", review.getDetails());
         document.append("authorId", review.getAuthorId());
@@ -129,6 +141,10 @@ public abstract class ReviewRepository {
         String reviewId = document.getString("_id");
         ReviewId id = new ReviewId(revieweeId, reviewId);
         review.setId(id);
+
+        Date date = document.getDate("date");
+        LocalDate localDate = DateConverter.dateToLocalDate(date);
+        review.setDate(localDate);
 
         Decimal128 ratingDecimal = document.get("rating", Decimal128.class);
         BigDecimal rating = ratingDecimal.bigDecimalValue();

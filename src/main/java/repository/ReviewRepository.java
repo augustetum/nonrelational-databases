@@ -19,6 +19,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.Updates;
 
 @Repository
@@ -75,6 +76,7 @@ public abstract class ReviewRepository {
                 Projections.excludeId()
             )),
             Aggregates.unwind("$reviews"),
+            Aggregates.sort(Sorts.descending("reviews.date")),
             Aggregates.replaceRoot("$reviews")
         );
 

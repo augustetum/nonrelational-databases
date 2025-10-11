@@ -20,6 +20,7 @@ import dto.ValidationResultDto;
 import entity.Review;
 import entity.ReviewId;
 import service.CustomClientDetails;
+import service.CustomFreelancerDetails;
 import service.ReviewPermissionService;
 import service.ReviewService;
 import service.ReviewValidationService;
@@ -35,16 +36,26 @@ public class ReviewController {
     private ReviewService reviewService;
 
     @GetMapping
-    public ResponseEntity<List<Review>> getByRevieweeId(boolean isClient, String revieweeId) {
+    public ResponseEntity<List<Review>> getByRevieweeId(Authentication authentication, String revieweeId) {
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
+
         List<Review> reviews = reviewService.getByRevieweeId(revieweeId, isClient);
         return ResponseEntity.ok(reviews);
     }
 
     @PostMapping
-    public ResponseEntity<?> addReview(Authentication authentication, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {        
-        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
-        String userId = userDetails.getUser().getId();
-        
+    public ResponseEntity<?> addReview(Authentication authentication, @RequestBody AddReviewRequestDto requestDto) {
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
+
+        String userId;
+        if (isClient) {
+            CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        } else {
+            CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        }
+
         // check if user allowed to add review
         PermissionCheckResultDto permissionResult = permissionService.canAddReview(requestDto.revieweeId, userId, isClient);
         
@@ -71,10 +82,18 @@ public class ReviewController {
     }
 
     @PutMapping
-    public ResponseEntity<?> editReview(Authentication authentication, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
-        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
-        String userId = userDetails.getUser().getId();
-        
+    public ResponseEntity<?> editReview(Authentication authentication, @RequestBody EditReviewRequestDto requestDto) {
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
+
+        String userId;
+        if (isClient) {
+            CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        } else {
+            CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        }
+
         // check if user allowed to edit review
         PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.reviewId, userId, isClient);
         
@@ -101,10 +120,18 @@ public class ReviewController {
     }
 
     @DeleteMapping
-    public ResponseEntity<?> removeReview(Authentication authentication, boolean isClient, @RequestBody RemoveReviewRequestDto requestDto) {
-        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
-        String userId = userDetails.getUser().getId();
-        
+    public ResponseEntity<?> removeReview(Authentication authentication, @RequestBody RemoveReviewRequestDto requestDto) {
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
+
+        String userId;
+        if (isClient) {
+            CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        } else {
+            CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        }
+
         // check if user allowed to edit review
         PermissionCheckResultDto permissionResult = permissionService.canDeleteReview(requestDto.revieweeId, requestDto.reviewId, userId, isClient);
 

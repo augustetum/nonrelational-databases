@@ -5,6 +5,7 @@ import service.BookingPermissionService;
 import service.BookingService;
 import service.BookingValidationService;
 import service.CustomClientDetails;
+import service.CustomFreelancerDetails;
 import util.IdentifierGenerator;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,10 @@ public class BookingController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, boolean isClient, Authentication authentication){
+    public ResponseEntity<?> createBooking(@RequestBody CreateBookingRequestDto bookingRequest, Authentication authentication){
+
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
+
         if(!isClient) return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can create bookings.");
 
         //check if permissions are okay
@@ -117,10 +121,17 @@ public class BookingController {
     }
 
     @DeleteMapping("/{bookingId}")
-    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, boolean isClient, Authentication authentication){
+    public ResponseEntity<?> deleteBooking(@PathVariable String bookingId, Authentication authentication){
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
 
-        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
-        String userId = userDetails.getUser().getId();
+        String userId;
+        if (isClient) {
+            CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        } else {
+            CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        }
 
         PermissionCheckResultDto permissionResult = permissionService.canDeleteBooking(bookingId, userId);
 

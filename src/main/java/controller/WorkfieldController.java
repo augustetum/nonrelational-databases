@@ -90,4 +90,13 @@ public class WorkfieldController {
         workfieldService.addWorkfield(freelancerId, workfield);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+    @DeleteMapping("/{workfieldId}")
+    public ResponseEntity<?> deleteWorkfield(@PathVariable String workfieldId, Authentication authentication){
+        CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
+        String freelancerId = userDetails.getUser().getId();
+
+        workfieldService.deleteWorkfield(freelancerId, workfieldId);
+        return ResponseEntity.ok().build();
+    }
 }

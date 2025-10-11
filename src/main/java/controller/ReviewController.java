@@ -2,6 +2,7 @@ package controller;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +19,7 @@ import dto.RemoveReviewRequestDto;
 import dto.ValidationResultDto;
 import entity.Review;
 import entity.ReviewId;
+import service.CustomClientDetails;
 import service.ReviewPermissionService;
 import service.ReviewService;
 import service.ReviewValidationService;
@@ -39,9 +41,12 @@ public class ReviewController {
     }
 
     @PostMapping
-    public ResponseEntity<?> addReview(String authorId, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {        
+    public ResponseEntity<?> addReview(Authentication authentication, boolean isClient, @RequestBody AddReviewRequestDto requestDto) {        
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String userId = userDetails.getUser().getId();
+        
         // check if user allowed to add review
-        PermissionCheckResultDto permissionResult = permissionService.canAddReview(requestDto.revieweeId, authorId, isClient);
+        PermissionCheckResultDto permissionResult = permissionService.canAddReview(requestDto.revieweeId, userId, isClient);
         
         if (permissionResult.isDenied())
         {
@@ -53,7 +58,7 @@ public class ReviewController {
         review.setId(new ReviewId(requestDto.revieweeId));
         review.setRating(requestDto.rating);
         review.setDetails(requestDto.details);
-        review.setAuthorId(authorId);
+        review.setAuthorId(userId);
 
         ValidationResultDto validationResult = validationService.validate(review, false);
         if (validationResult.isInvalid()) {
@@ -66,9 +71,12 @@ public class ReviewController {
     }
 
     @PutMapping
-    public ResponseEntity<?> editReview(String authorId, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
+    public ResponseEntity<?> editReview(Authentication authentication, boolean isClient, @RequestBody EditReviewRequestDto requestDto) {
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String userId = userDetails.getUser().getId();
+        
         // check if user allowed to edit review
-        PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.reviewId, authorId, isClient);
+        PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.reviewId, userId, isClient);
         
         if (permissionResult.isDenied())
         {
@@ -80,7 +88,7 @@ public class ReviewController {
         review.setId(new ReviewId(requestDto.revieweeId, requestDto.reviewId));
         review.setRating(requestDto.rating);
         review.setDetails(requestDto.details);
-        review.setAuthorId(authorId);
+        review.setAuthorId(userId);
 
         ValidationResultDto validationResult = validationService.validate(review, true);
         if (validationResult.isInvalid()) {
@@ -93,9 +101,12 @@ public class ReviewController {
     }
 
     @DeleteMapping
-    public ResponseEntity<?> removeReview(String authorId, boolean isClient, @RequestBody RemoveReviewRequestDto requestDto) {
+    public ResponseEntity<?> removeReview(Authentication authentication, boolean isClient, @RequestBody RemoveReviewRequestDto requestDto) {
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String userId = userDetails.getUser().getId();
+        
         // check if user allowed to edit review
-        PermissionCheckResultDto permissionResult = permissionService.canDeleteReview(requestDto.revieweeId, requestDto.reviewId, authorId, isClient);
+        PermissionCheckResultDto permissionResult = permissionService.canDeleteReview(requestDto.revieweeId, requestDto.reviewId, userId, isClient);
 
         if (permissionResult.isDenied())
         {

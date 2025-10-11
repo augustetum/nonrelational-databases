@@ -1,11 +1,13 @@
 package dto;
 
+import java.math.BigDecimal;
+
 import lombok.Data;
 
 @Data
 public class EditReviewRequestDto {
     public String revieweeId;
     public String reviewId;
-    public double rating;
+    public BigDecimal rating;
     public String details;
 }

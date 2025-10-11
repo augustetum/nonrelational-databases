@@ -1,11 +1,13 @@
 package repository;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.types.Decimal128;
 import org.springframework.stereotype.Repository;
 import entity.Review;
 import entity.ReviewId;
@@ -128,7 +130,8 @@ public abstract class ReviewRepository {
         ReviewId id = new ReviewId(revieweeId, reviewId);
         review.setId(id);
 
-        Double rating = document.getDouble("rating");
+        Decimal128 ratingDecimal = document.get("rating", Decimal128.class);
+        BigDecimal rating = ratingDecimal.bigDecimalValue();
         review.setRating(rating);
 
         String details = document.getString("details");

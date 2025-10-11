@@ -3,11 +3,13 @@ package repository;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import config.MongoDbContext;
+import dto.EditWorkfieldDto;
 import entity.Workfield;
 import entity.WorkfieldCategory;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.stereotype.Repository;
+import util.IdentifierGenerator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,14 +73,44 @@ public class WorkfieldRepository {
                 .toList();
     }
 
+    public void addWorkfield(String freelancerId, Workfield workfield){
+        workfield.setId(IdentifierGenerator.generateId());
+        Document workfieldDoc = convertWorkfieldToDocument(workfield);
 
+        Bson filter = Filters.eq("_id", freelancerId);
+        Bson update = new Document("$push", new Document("workfields", workfieldDoc));
+        collection.updateOne(filter, update);
+    }
+
+    public void editWorkfield(String freelancerId, String workfieldId, EditWorkfieldDto dto){
+        Bson filter = Filters.and(
+                Filters.eq("_id", freelancerId),
+                Filters.eq("workfields.id", workfieldId)
+        );
+
+        Bson update = new Document("$set", new Document()
+                .append("workfields.$.category", dto.getCategory().name())
+                .append("workfields.$.description", dto.getDescription())
+                .append("workfields.$.hourlyRate", dto.getHourlyRate())
+        );
+
+        collection.updateOne(filter, update);
+    }
+
+    private Document convertWorkfieldToDocument(Workfield workfield) {
+        return new Document()
+                .append("id", workfield.getId())
+                .append("category", workfield.getCategory().name())
+                .append("description", workfield.getDescription())
+                .append("hourlyRate", workfield.getHourlyRate());
+    }
 
     private Workfield convertDocumentToWorkfield(Document doc) {
         Workfield workfield = new Workfield();
         workfield.setId(doc.getString("id"));
         workfield.setCategory(WorkfieldCategory.valueOf(doc.getString("category")));
         workfield.setDescription(doc.getString("description"));
-        workfield.setHourlyRate(doc.getInteger("number"));
+        workfield.setHourlyRate(doc.getInteger("hourlyRate"));
         return workfield;
     }
 }

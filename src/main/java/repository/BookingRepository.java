@@ -11,6 +11,7 @@ import com.mongodb.client.model.Updates;
 
 import config.MongoDbContext;
 import entity.Booking;
+import entity.BookingStatus;
 import util.IdentifierGenerator;
 
 @Repository
@@ -54,6 +55,10 @@ public class BookingRepository {
         String bookingId = IdentifierGenerator.generateId();
         booking.setId(bookingId);
 
+        if (booking.getStatus() == null) {
+            booking.setStatus(BookingStatus.PENDING);
+        }
+
         Document bookingDocument = bookingToDocument(booking);
         dbContext.bookings.insertOne(bookingDocument);
     }
@@ -66,6 +71,12 @@ public class BookingRepository {
                         Updates.set("details", updatedBooking.getDetails())
         );
         dbContext.bookings.updateOne(filter, updates);
+    }
+
+    public void updateStatus(String bookingId, BookingStatus status){
+        Bson filter = Filters.eq("_id", bookingId);
+        Bson update = Updates.set("status", status.name());
+        dbContext.bookings.updateOne(filter, update);
     }
 
     public void delete(String bookingId){
@@ -83,6 +94,9 @@ public class BookingRepository {
         booking.setClientId(document.getString("clientId"));
         booking.setFreelancerId(document.getString("freelancerId"));
 
+        String statusStr = document.getString("status");
+        booking.setStatus(statusStr != null ? BookingStatus.valueOf(statusStr) : BookingStatus.PENDING);
+
         return booking;
     }
 
@@ -94,6 +108,7 @@ public class BookingRepository {
         document.append("details", booking.getDetails());
         document.append("clientId", booking.getClientId());
         document.append("freelancerId", booking.getFreelancerId());
+        document.append("status", booking.getStatus().name());
 
         return document;
     }

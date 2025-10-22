@@ -15,4 +15,5 @@ public class Booking {
     private String details;
     private String clientId;
     private String freelancerId;
+    private BookingStatus status;
 }

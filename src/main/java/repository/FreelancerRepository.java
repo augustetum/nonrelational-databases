@@ -43,12 +43,22 @@ public class FreelancerRepository {
     public Optional<FreelancerDetailsDto> getDetails(String freelancerId) {
         List<Bson> pipeline = Arrays.asList(
             Aggregates.match(Filters.eq("_id", freelancerId)),
+            Aggregates.lookup("bookings", "_id", "freelancerId", "completedBookings"),
             Aggregates.project(Projections.fields(
-                Projections.computed("averageRating", 
+                Projections.computed("averageRating",
                     new Document("$ifNull", Arrays.asList(
-                        new Document("$avg", "$reviews.rating"), 
+                        new Document("$avg", "$reviews.rating"),
                         BigDecimal.ZERO
                     ))
+                ),
+                Projections.computed("jobsCompleted",
+                    new Document("$size",
+                        new Document("$filter", new Document()
+                            .append("input", "$completedBookings")
+                            .append("as", "booking")
+                            .append("cond", new Document("$eq", Arrays.asList("$$booking.status", "COMPLETED")))
+                        )
+                    )
                 ),
                 Projections.include("firstName", "lastName", "city", "email", "phoneNumber")
             ))
@@ -97,20 +107,23 @@ public class FreelancerRepository {
 
         String firstName = document.getString("firstName");
         freelancerDetails.setFirstName(firstName);
-        
+
         String lastName = document.getString("lastName");
         freelancerDetails.setLastName(lastName);
 
         Decimal128 ratingDecimal = document.get("averageRating", Decimal128.class);
         BigDecimal rating = ratingDecimal.bigDecimalValue();
         freelancerDetails.setRating(rating);
-        
+
         long phoneNumber = document.getLong("phoneNumber");
         freelancerDetails.setPhoneNumber(phoneNumber);
-        
+
         String city = document.getString("city");
         freelancerDetails.setCity(city);
-        
+
+        Integer jobsCompleted = document.getInteger("jobsCompleted", 0);
+        freelancerDetails.setJobsCompleted(jobsCompleted);
+
         return freelancerDetails;
     }
 

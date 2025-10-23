@@ -4,20 +4,16 @@ import entity.Booking;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import repository.BookingRepository;
-import util.IdentifierGenerator;
 
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import dto.CreateBookingRequestDto;
-
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -103,23 +99,23 @@ public class BookingService {
         }
     }
 
-    public void confirmBooking(String reservationId, String clientId) {
+    public void confirmBooking(String bookingId) {
         try (Jedis jedis = jedisPool.getResource()) {
-            Booking reservation = getReservation(reservationId);
+            Booking booking = getReservation(bookingId);
 
-            if (reservation == null) {
+            if (booking == null) {
                 throw new IllegalStateException("Reservation not found or expired");
             }
 
             // Delete the reservation keys
-            String reservationKey = buildReservationKey(reservationId);
-            String dateKey = buildDateKey(reservation.getFreelancerId(),
-                    reservation.getTime());
+            String reservationKey = buildReservationKey(bookingId);
+            String dateKey = buildDateKey(booking.getFreelancerId(),
+                    booking.getTime());
 
             jedis.del(reservationKey, dateKey);
 
             // Here you would proceed with creating the actual booking in MongoDB
-            repository.add(reservation);
+            repository.add(booking);
         }
     }
 

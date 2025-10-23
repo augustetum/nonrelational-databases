@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import dto.CreateBookingRequestDto;
@@ -26,7 +27,13 @@ import dto.EditBookingRequestDto;
 import dto.PermissionCheckResultDto;
 import dto.ValidationResultDto;
 
+import java.util.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -88,10 +95,40 @@ public class BookingController {
 
         // check if there are no null or invalid fields
         ValidationResultDto validationResult = validationService.validate(booking);
+
+        bookingService.createReservation(booking);
         if (validationResult.isInvalid())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
 
-        return ResponseEntity.ok().build();
+        Long remainingTime = bookingService.getRemainingTime(booking.getId());
+        return ResponseEntity.ok(Map.of(
+                "reservation", booking,
+                "remainingSeconds", remainingTime));
+    }
+
+    @PostMapping("/confirm/{reservationId}")
+    public ResponseEntity<?> confirmBooking(@PathVariable String bookingId) {
+        try {
+            bookingService.confirmBooking(bookingId);
+            return ResponseEntity.ok(Map.of("message", "Booking confirmed"));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/check-availability")
+    public ResponseEntity<?> checkAvailability(
+            @RequestParam String freelancerId,
+            @RequestParam String bookingDate) {
+        try {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+            formatter.setTimeZone(TimeZone.getTimeZone("America/New_York"));
+            Date date = formatter.parse(bookingDate);
+            boolean available = bookingService.isDateAvailable(freelancerId, date);
+            return ResponseEntity.ok(Map.of("available", available));
+        } catch (ParseException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{bookingId}")
@@ -123,6 +160,12 @@ public class BookingController {
         // update the booking in the database
         bookingService.updateBooking(bookingId, booking);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/cancel/{reservationId}")
+    public ResponseEntity<?> cancelReservation(@PathVariable String reservationId) {
+        bookingService.cancelReservation(reservationId);
+        return ResponseEntity.ok(Map.of("message", "Reservation cancelled"));
     }
 
     @DeleteMapping("/{bookingId}")

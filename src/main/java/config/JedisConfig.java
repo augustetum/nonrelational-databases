@@ -10,6 +10,6 @@ import redis.clients.jedis.JedisPool;
 public class JedisConfig {
     @Bean
     public JedisPool jedisPool() {
-        return new JedisPool( "localhost", 6379);
+        return new JedisPool( "localhost", 8090);
     }
 }

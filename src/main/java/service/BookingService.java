@@ -1,40 +1,161 @@
 package service;
 
 import entity.Booking;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 import repository.BookingRepository;
+import util.IdentifierGenerator;
 
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import dto.CreateBookingRequestDto;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class BookingService {
     private final BookingRepository repository;
+    private final JedisPool jedisPool;
+    private final ObjectMapper objectMapper;
+    private static final int RESERVATION_TTL_SECONDS = 600;
 
-    public BookingService(BookingRepository repository) {
+    public BookingService(BookingRepository repository, JedisPool jedisPool, ObjectMapper objectMapper) {
         this.repository = repository;
+        this.jedisPool = jedisPool;
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.registerModule(new JavaTimeModule());
     }
 
     public List<Booking> getAllBookings() {
         return repository.getAllBookings();
     }
 
-    public List<Booking> getByClientId(String clientId){
+    public List<Booking> getByClientId(String clientId) {
         return repository.getByClientId(clientId);
     }
 
-    public Booking getById(String bookingId){
+    public Booking getById(String bookingId) {
         return repository.getById(bookingId);
     }
 
-    public void createBooking(Booking booking){
-        repository.add(booking);
+    public List<LocalDate> getBookedDates(String freelancerId) {
+        List<Booking> bookings = repository.getByFreelancerId(freelancerId);
+        List<LocalDate> bookedDates = bookings.stream()
+                .map(booking -> booking.getTime().toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate())
+                .collect(Collectors.toList());
+        return bookedDates;
     }
 
-    public void updateBooking(String bookingId, Booking updatedBooking){
+    public Booking createReservation(Booking booking) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            // Check if date is already reserved
+            String dateKey = buildDateKey(booking.getFreelancerId(), booking.getTime());
+            if (jedis.exists(dateKey)) {
+                throw new IllegalStateException("This date is already reserved");
+            }
+
+            // Store reservation with TTL
+            String reservationKey = buildReservationKey(booking.getId());
+            String reservationJson = objectMapper.writeValueAsString(booking);
+
+            // Use transaction to ensure atomicity
+            jedis.watch(dateKey);
+            var transaction = jedis.multi();
+            transaction.setex(reservationKey, RESERVATION_TTL_SECONDS, reservationJson);
+            transaction.setex(dateKey, RESERVATION_TTL_SECONDS, booking.getClientId());
+            transaction.exec();
+
+            return booking;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create reservation", e);
+        }
+    }
+
+    public Booking getReservation(String reservationId) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            String key = buildReservationKey(reservationId);
+            String json = jedis.get(key);
+
+            if (json == null) {
+                return null;
+            }
+
+            return objectMapper.readValue(json, Booking.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get reservation", e);
+        }
+    }
+
+    public boolean isDateAvailable(String freelancerId, Date bookingDate) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            String dateKey = buildDateKey(freelancerId, bookingDate);
+            return !jedis.exists(dateKey);
+        }
+    }
+
+    public void confirmBooking(String reservationId, String clientId) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            Booking reservation = getReservation(reservationId);
+
+            if (reservation == null) {
+                throw new IllegalStateException("Reservation not found or expired");
+            }
+
+            // Delete the reservation keys
+            String reservationKey = buildReservationKey(reservationId);
+            String dateKey = buildDateKey(reservation.getFreelancerId(),
+                    reservation.getTime());
+
+            jedis.del(reservationKey, dateKey);
+
+            // Here you would proceed with creating the actual booking in MongoDB
+            repository.add(reservation);
+        }
+    }
+
+    public void cancelReservation(String reservationId) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            Booking reservation = getReservation(reservationId);
+
+            if (reservation != null) {
+                String reservationKey = buildReservationKey(reservationId);
+                String dateKey = buildDateKey(reservation.getFreelancerId(),
+                        reservation.getTime());
+                jedis.del(reservationKey, dateKey);
+            }
+        }
+    }
+
+    public Long getRemainingTime(String reservationId) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            String key = buildReservationKey(reservationId);
+            return jedis.ttl(key);
+        }
+    }
+
+    private String buildReservationKey(String reservationId) {
+        return "reservation:" + reservationId;
+    }
+
+    private String buildDateKey(String freelancerId, Date bookingDate) {
+        return "date:" + freelancerId + ":" + bookingDate.toString();
+    }
+
+    public void updateBooking(String bookingId, Booking updatedBooking) {
         repository.update(bookingId, updatedBooking);
     }
 
-    public void deleteBooking(String bookingId){
+    public void deleteBooking(String bookingId) {
         repository.delete(bookingId);
     }
 }

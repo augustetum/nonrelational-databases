@@ -1,5 +1,7 @@
 package controller;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,5 +19,14 @@ public class FreelancerController {
     public ResponseEntity<?> getFreelancerDetails(String userId) {
         Optional<FreelancerDetailsDto> maybeFreelancer = freelancerService.getFreelancerDetails(userId);
         return ResponseEntity.ok(maybeFreelancer);
+    }
+
+    @GetMapping("/dates")
+    public ResponseEntity<?> getAvailableDates(String freelancerId) {
+        List<LocalDate> availableDates = freelancerService.getAvailableDates(freelancerId);
+        if (availableDates.isEmpty())
+            return ResponseEntity.ok("This freelancer has no available dates");
+        else
+            return ResponseEntity.ok(availableDates);
     }
 }

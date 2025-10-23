@@ -104,14 +104,12 @@ public class BookingService {
                 throw new IllegalStateException("Reservation not found or expired");
             }
 
-            // Delete the reservation keys
             String reservationKey = buildReservationKey(bookingId);
             String dateKey = buildDateKey(booking.getFreelancerId(),
                     booking.getTime());
 
             jedis.del(reservationKey, dateKey);
 
-            // Here you would proceed with creating the actual booking in MongoDB
             repository.add(booking);
         }
     }

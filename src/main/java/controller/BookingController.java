@@ -106,7 +106,7 @@ public class BookingController {
                 "remainingSeconds", remainingTime));
     }
 
-    @PostMapping("/confirm/{reservationId}")
+    @PostMapping("/confirm/{bookingId}")
     public ResponseEntity<?> confirmBooking(@PathVariable String bookingId) {
         try {
             bookingService.confirmBooking(bookingId);

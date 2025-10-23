@@ -18,5 +18,4 @@ public class FreelancerController {
         Optional<FreelancerDetailsDto> maybeFreelancer = freelancerService.getFreelancerDetails(userId);
         return ResponseEntity.ok(maybeFreelancer);
     }
-
 }

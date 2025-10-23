@@ -54,17 +54,14 @@ public class BookingService {
 
     public Booking createReservation(Booking booking) {
         try (Jedis jedis = jedisPool.getResource()) {
-            // Check if date is already reserved
             String dateKey = buildDateKey(booking.getFreelancerId(), booking.getTime());
             if (jedis.exists(dateKey)) {
                 throw new IllegalStateException("This date is already reserved");
             }
 
-            // Store reservation with TTL
             String reservationKey = buildReservationKey(booking.getId());
             String reservationJson = objectMapper.writeValueAsString(booking);
 
-            // Use transaction to ensure atomicity
             jedis.watch(dateKey);
             var transaction = jedis.multi();
             transaction.setex(reservationKey, RESERVATION_TTL_SECONDS, reservationJson);

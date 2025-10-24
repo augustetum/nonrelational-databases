@@ -12,4 +12,5 @@ public class FreelancerDetailsDto {
     private BigDecimal rating;
     private long phoneNumber;
     private String city;
+    private int jobsCompleted;
 }

@@ -74,9 +74,9 @@ public class BookingService {
         }
     }
 
-    public Booking getReservation(String reservationId) {
+    public Booking getReservation(String bookingId) {
         try (Jedis jedis = jedisPool.getResource()) {
-            String key = buildReservationKey(reservationId);
+            String key = buildReservationKey(bookingId);
             String json = jedis.get(key);
 
             if (json == null) {
@@ -114,12 +114,12 @@ public class BookingService {
         }
     }
 
-    public void cancelReservation(String reservationId) {
+    public void cancelReservation(String bookingId) {
         try (Jedis jedis = jedisPool.getResource()) {
-            Booking reservation = getReservation(reservationId);
+            Booking reservation = getReservation(bookingId);
 
             if (reservation != null) {
-                String reservationKey = buildReservationKey(reservationId);
+                String reservationKey = buildReservationKey(bookingId);
                 String dateKey = buildDateKey(reservation.getFreelancerId(),
                         reservation.getTime());
                 jedis.del(reservationKey, dateKey);
@@ -127,15 +127,15 @@ public class BookingService {
         }
     }
 
-    public Long getRemainingTime(String reservationId) {
+    public Long getRemainingTime(String bookingId) {
         try (Jedis jedis = jedisPool.getResource()) {
-            String key = buildReservationKey(reservationId);
+            String key = buildReservationKey(bookingId);
             return jedis.ttl(key);
         }
     }
 
-    private String buildReservationKey(String reservationId) {
-        return "reservation:" + reservationId;
+    private String buildReservationKey(String bookingId) {
+        return "reservation:" + bookingId;
     }
 
     private String buildDateKey(String freelancerId, Date bookingDate) {

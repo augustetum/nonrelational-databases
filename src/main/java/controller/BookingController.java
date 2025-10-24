@@ -66,6 +66,21 @@ public class BookingController {
         return ResponseEntity.ok(booking);
     }
 
+    @GetMapping("/check-availability")
+    public ResponseEntity<?> checkAvailability(
+            @RequestParam String freelancerId,
+            @RequestParam String bookingDate) {
+        try {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
+            formatter.setTimeZone(TimeZone.getTimeZone("Europe/Vilnius"));
+            Date date = formatter.parse(bookingDate);
+            boolean available = bookingService.isDateAvailable(freelancerId, date);
+            return ResponseEntity.ok(Map.of("available", available));
+        } catch (ParseException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/reserve")
     public ResponseEntity<?> createReservation(@RequestBody CreateBookingRequestDto bookingRequest,
             Authentication authentication) {
@@ -96,6 +111,7 @@ public class BookingController {
         // check if there are no null or invalid fields
         ValidationResultDto validationResult = validationService.validate(booking);
 
+        // create reservation and give the user a reservation key
         bookingService.createReservation(booking);
         if (validationResult.isInvalid())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
@@ -106,27 +122,13 @@ public class BookingController {
                 "remainingSeconds", remainingTime));
     }
 
+    // confirm booking using the booking id that was provided when creating it
     @PostMapping("/confirm/{bookingId}")
     public ResponseEntity<?> confirmBooking(@PathVariable String bookingId) {
         try {
             bookingService.confirmBooking(bookingId);
             return ResponseEntity.ok(Map.of("message", "Booking confirmed"));
         } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/check-availability")
-    public ResponseEntity<?> checkAvailability(
-            @RequestParam String freelancerId,
-            @RequestParam String bookingDate) {
-        try {
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.ENGLISH);
-            formatter.setTimeZone(TimeZone.getTimeZone("America/New_York"));
-            Date date = formatter.parse(bookingDate);
-            boolean available = bookingService.isDateAvailable(freelancerId, date);
-            return ResponseEntity.ok(Map.of("available", available));
-        } catch (ParseException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }

@@ -33,4 +33,12 @@ public class FreelancerService {
         freeDates.removeAll(bookedDates);
         return freeDates;
     }
+    
+    public List<FreelancerDetailsDto> getLeaderboard(String sortBy, int limit, int skip) {
+        // Validate sortBy parameter
+        if (!sortBy.equals("averageRating") && !sortBy.equals("jobsCompleted")) {
+            sortBy = "averageRating"; // default
+        }
+        return freelancerRepository.getLeaderboard(sortBy, limit, skip);
+    }
 }

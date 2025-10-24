@@ -1,6 +1,7 @@
 package controller;
 
 import entity.Booking;
+import entity.BookingStatus;
 import service.BookingPermissionService;
 import service.BookingService;
 import service.BookingValidationService;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -168,6 +170,33 @@ public class BookingController {
     public ResponseEntity<?> cancelReservation(@PathVariable String reservationId) {
         bookingService.cancelReservation(reservationId);
         return ResponseEntity.ok(Map.of("message", "Reservation cancelled"));
+    }
+    
+    @PatchMapping("/{bookingId}/complete")
+    public ResponseEntity<?> markBookingAsCompleted(@PathVariable String bookingId, Authentication authentication){
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
+
+        if(!isClient) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can mark bookings as completed.");
+        }
+
+        CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+        String clientId = userDetails.getUser().getId();
+
+        // Get the booking
+        Booking booking = bookingService.getById(bookingId);
+        if(booking == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Booking not found.");
+        }
+
+        // Verify the client owns this booking
+        if(!booking.getClientId().equals(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can only mark your own bookings as completed.");
+        }
+
+        // Update the booking status
+        bookingService.updateBookingStatus(bookingId, BookingStatus.COMPLETED);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{bookingId}")

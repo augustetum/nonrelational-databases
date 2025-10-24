@@ -29,4 +29,15 @@ public class FreelancerController {
         else
             return ResponseEntity.ok(availableDates);
     }
+    
+    @GetMapping("/leaderboard")
+    public ResponseEntity<List<FreelancerDetailsDto>> getLeaderboard(
+        @RequestParam(defaultValue = "averageRating") String sortBy,
+        @RequestParam(defaultValue = "10") int limit,
+        @RequestParam(defaultValue = "0") int skip
+    ) {
+        List<FreelancerDetailsDto> leaderboard = freelancerService.getLeaderboard(sortBy, limit, skip);
+        return ResponseEntity.ok(leaderboard);
+    }
+
 }

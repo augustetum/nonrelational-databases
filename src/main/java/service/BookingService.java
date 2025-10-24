@@ -3,6 +3,7 @@ package service;
 import entity.Booking;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import entity.BookingStatus;
 import repository.BookingRepository;
 
 import org.springframework.stereotype.Service;
@@ -148,5 +149,9 @@ public class BookingService {
 
     public void deleteBooking(String bookingId) {
         repository.delete(bookingId);
+    }
+
+    public void updateBookingStatus(String bookingId, BookingStatus status){
+        repository.updateStatus(bookingId, status);
     }
 }

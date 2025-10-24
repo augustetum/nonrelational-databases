@@ -24,34 +24,35 @@ public class BookingRepository {
 
     public List<Booking> getAllBookings() {
         return dbContext.bookings.find()
-            .into(new ArrayList<Document>())
-            .stream()
-            .map(this::documentToBooking)
-            .toList();
+                .into(new ArrayList<Document>())
+                .stream()
+                .map(this::documentToBooking)
+                .toList();
     }
 
-    public List<Booking> getByClientId(String clientId){
+    public List<Booking> getByClientId(String clientId) {
         List<Booking> allBookings = getAllBookings();
         return allBookings.stream()
-                    .filter(booking -> booking.getClientId().equals(clientId))
-                    .toList();
+                .filter(booking -> booking.getClientId().equals(clientId))
+                .toList();
     }
 
-    public List<Booking> getByFreelancerId(String freelancerId){
+    public List<Booking> getByFreelancerId(String freelancerId) {
+        List<Booking> allBookings = getAllBookings();
+        List<Booking> freelancerBookings = allBookings.stream()
+                .filter(booking -> booking.getFreelancerId().equals(freelancerId))
+                .toList();
+        return freelancerBookings;
+    }
+
+    public Booking getById(String bookingId) {
         List<Booking> allBookings = getAllBookings();
         return allBookings.stream()
-                    .filter(booking -> booking.getFreelancerId().equals(freelancerId))
-                    .toList();
+                .filter(booking -> booking.getId().equals(bookingId))
+                .findFirst().orElse(null);
     }
 
-    public Booking getById(String bookingId){
-        List<Booking> allBookings = getAllBookings();
-        return allBookings.stream()
-                    .filter(booking -> booking.getId().equals(bookingId))
-                    .findFirst().orElse(null);
-    }
-
-    public void add(Booking booking){
+    public void add(Booking booking) {
         String bookingId = IdentifierGenerator.generateId();
         booking.setId(bookingId);
 
@@ -63,13 +64,12 @@ public class BookingRepository {
         dbContext.bookings.insertOne(bookingDocument);
     }
 
-    public void update(String bookingId, Booking updatedBooking){
+    public void update(String bookingId, Booking updatedBooking) {
         Bson filter = Filters.eq("_id", bookingId);
         Bson updates = Updates.combine(
-                        Updates.set("time", updatedBooking.getTime()),
-                        Updates.set("address", updatedBooking.getAddress()),
-                        Updates.set("details", updatedBooking.getDetails())
-        );
+                Updates.set("time", updatedBooking.getTime()),
+                Updates.set("address", updatedBooking.getAddress()),
+                Updates.set("details", updatedBooking.getDetails()));
         dbContext.bookings.updateOne(filter, updates);
     }
 
@@ -100,7 +100,7 @@ public class BookingRepository {
         return booking;
     }
 
-    public Document bookingToDocument(Booking booking){
+    public Document bookingToDocument(Booking booking) {
         Document document = new Document();
         document.append("_id", booking.getId());
         document.append("time", booking.getTime());

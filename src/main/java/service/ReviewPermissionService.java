@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import dto.ClientDetailsDto;
 import dto.FreelancerDetailsDto;
 import dto.PermissionCheckResultDto;
-import entity.Freelancer;
 import entity.Review;
 import repository.ClientRepository;
 import repository.ClientReviewRepository;

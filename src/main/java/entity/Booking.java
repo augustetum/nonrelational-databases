@@ -16,4 +16,15 @@ public class Booking {
     private String clientId;
     private String freelancerId;
     private BookingStatus status;
+
+    public Booking(Date time, String address, String details, String freelancerId, String clientId) {
+        this.time = time;
+        this.address = address;
+        this.details = details;
+        this.freelancerId = freelancerId;
+        this.clientId = clientId;
+    }
+
+    public Booking() {
+    }
 }

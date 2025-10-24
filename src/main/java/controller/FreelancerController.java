@@ -1,5 +1,6 @@
 package controller;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,15 @@ public class FreelancerController {
         return ResponseEntity.ok(maybeFreelancer);
     }
 
+    @GetMapping("/dates")
+    public ResponseEntity<?> getAvailableDates(String freelancerId) {
+        List<LocalDate> availableDates = freelancerService.getAvailableDates(freelancerId);
+        if (availableDates.isEmpty())
+            return ResponseEntity.ok("This freelancer has no available dates");
+        else
+            return ResponseEntity.ok(availableDates);
+    }
+    
     @GetMapping("/leaderboard")
     public ResponseEntity<List<FreelancerDetailsDto>> getLeaderboard(
         @RequestParam(defaultValue = "averageRating") String sortBy,

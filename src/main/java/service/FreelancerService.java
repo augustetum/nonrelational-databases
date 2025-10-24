@@ -71,7 +71,6 @@ public class FreelancerService {
         }
         
         String leaderboardKey = String.format("leaderboard:%s:%d:%d", sortBy, limit, skip);
-
         try (Jedis jedis = jedisPool.getResource()) {
             List<FreelancerDetailsDto> freelancerDetailsList;
 

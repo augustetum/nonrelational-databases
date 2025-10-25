@@ -47,7 +47,39 @@ public class FreelancerCacheRepository {
             jedis.set(freelancerDataKey, dtoJson);
         }
         catch (Exception ex) {
+            throw new RuntimeException("Putting object to cache was unsuccessful", ex);
+        }
+    }
+
+    public List<String> getLeaderboardFreelancerIds(String sortBy, int limit, int skip) {
+        String leaderboardKey = String.format("leaderboard:%s:%d:%d", sortBy, limit, skip);
+
+        try (Jedis jedis = jedisPool.getResource()) { 
+            if (!jedis.exists(leaderboardKey)) {
+                return null;
+            }
+            
+            List<String> cachedIds = jedis.lrange(leaderboardKey, 0, -1);
+            return cachedIds;
+        }
+        catch (Exception ex) {
             throw new RuntimeException("Retrieving object from cache was unsuccessful", ex);
+        }
+    }
+
+    public void setLeaderboardFreelancerIds(String sortBy, int limit, int skip, List<String> freelancerIds) {
+        if (freelancerIds == null) {
+            return;
+        }
+
+        String leaderboardKey = String.format("leaderboard:%s:%d:%d", sortBy, limit, skip);
+        try (Jedis jedis = jedisPool.getResource()) { 
+            jedis.del(leaderboardKey); // TODO: should it be deleted?
+            jedis.rpush(leaderboardKey, freelancerIds.toArray(new String[0]));
+            jedis.expire(leaderboardKey, 300); // TODO: remove after invalidation is in place
+        }
+        catch (Exception ex) {
+            throw new RuntimeException("Putting object to cache was unsuccessful", ex);
         }
     }
 }

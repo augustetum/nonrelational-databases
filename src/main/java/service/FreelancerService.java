@@ -8,11 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import dto.FreelancerDetailsDto;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.Jedis;
 import repository.FreelancerCacheRepository;
 import repository.FreelancerRepository;
 
@@ -23,16 +19,10 @@ public class FreelancerService {
     
     private final BookingService bookingService;
 
-    private final JedisPool jedisPool;
-    private final ObjectMapper objectMapper;
-
-    public FreelancerService(FreelancerRepository freelancerRepository, FreelancerCacheRepository freelancerCacheRepository, BookingService bookingService, JedisPool jedisPool, ObjectMapper objectMapper) {
+    public FreelancerService(FreelancerRepository freelancerRepository, FreelancerCacheRepository freelancerCacheRepository, BookingService bookingService) {
         this.freelancerRepository = freelancerRepository;
         this.freelancerCacheRepository = freelancerCacheRepository;
         this.bookingService = bookingService;
-
-        this.jedisPool = jedisPool;
-        this.objectMapper = objectMapper;
     }
 
     public Optional<FreelancerDetailsDto> getFreelancerDetails(String userId) {
@@ -55,47 +45,31 @@ public class FreelancerService {
         if (!sortBy.equals("averageRating") && !sortBy.equals("jobsCompleted")) {
             sortBy = "averageRating";
         }
+
+        List<FreelancerDetailsDto> freelancerDetailsList;
+        List<String> cachedIds = freelancerCacheRepository.getLeaderboardFreelancerIds(sortBy, limit, skip);
         
-        String leaderboardKey = String.format("leaderboard:%s:%d:%d", sortBy, limit, skip);
-        try (Jedis jedis = jedisPool.getResource()) {
-            List<FreelancerDetailsDto> freelancerDetailsList;
+        if (cachedIds != null) {
+            freelancerDetailsList = new ArrayList<FreelancerDetailsDto>();
 
-            if (jedis.exists(leaderboardKey)) {
-                System.out.println("list from cache");
-
-                freelancerDetailsList = new ArrayList<FreelancerDetailsDto>();
-                List<String> cachedIds = jedis.lrange(leaderboardKey, 0, -1);
-
-                for (String id : cachedIds) {
-                    Optional<FreelancerDetailsDto> maybeDetails = getFreelancerDetails(id);
-                    
-                    if (!maybeDetails.isPresent()) {
-                        throw new Exception("Couldn't get freelancer from cache or database");
-                    }
-                    
-                    freelancerDetailsList.add(maybeDetails.get());
-                }
-
-                return freelancerDetailsList;
-            }
-
-            // cache miss
-            freelancerDetailsList = freelancerRepository.getLeaderboard(sortBy, limit, skip);
-            List<String> freelancerIds = freelancerDetailsList.stream().map(FreelancerDetailsDto::getId).collect(Collectors.toList());
-
-            if (freelancerIds != null) {
-                System.out.println("list from db");
-
-                jedis.del(leaderboardKey);
-                jedis.rpush(leaderboardKey, freelancerIds.toArray(new String[0]));
-                jedis.expire(leaderboardKey, 300); // TODO: delete later
+            for (String id : cachedIds) {
+                Optional<FreelancerDetailsDto> maybeDetails = getFreelancerDetails(id);
+                FreelancerDetailsDto dto = maybeDetails.get();
+                freelancerDetailsList.add(dto);
             }
 
             return freelancerDetailsList;
         }
-        catch(Exception ex) {
-            throw new RuntimeException("Failed to retrieve freelancer leaderboard", ex);
+
+        freelancerDetailsList = freelancerRepository.getLeaderboard(sortBy, limit, skip);
+        if (freelancerDetailsList == null) {
+            return null;
         }
+        
+        List<String> freelancerIds = freelancerDetailsList.stream().map(FreelancerDetailsDto::getId).collect(Collectors.toList());
+        freelancerCacheRepository.setLeaderboardFreelancerIds(sortBy, limit, skip, freelancerIds);
+
+        return freelancerDetailsList;
     }
 
     public List<LocalDate> getAvailableDates(String userId) {

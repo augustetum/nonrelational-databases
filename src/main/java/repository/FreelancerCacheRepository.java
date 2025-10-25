@@ -20,11 +20,15 @@ public class FreelancerCacheRepository {
         this.objectMapper = objectMapper;
     }
 
-    public FreelancerDetailsDto getFreelancerDetails(String id) {
+    public Jedis getJedisConnection() {
+        return jedisPool.getResource();
+    }
+
+    public FreelancerDetailsDto getFreelancerDetails(String id, Jedis jedisConn) {
         String freelancerDataKey = String.format("freelancers:%s", id);
 
-        try (Jedis jedis = jedisPool.getResource()) {
-            String cachedData = jedis.get(freelancerDataKey);
+        try {
+            String cachedData = jedisConn.get(freelancerDataKey);
 
             if (cachedData == null) {
                 return null;
@@ -38,28 +42,28 @@ public class FreelancerCacheRepository {
         }
     }
 
-    public void setFreelancerDetails(FreelancerDetailsDto freelancerDetailsDto) {
+    public void setFreelancerDetails(FreelancerDetailsDto freelancerDetailsDto, Jedis jedisConn) {
         String id = freelancerDetailsDto.getId();
         String freelancerDataKey = String.format("freelancers:%s", id);
 
-        try (Jedis jedis = jedisPool.getResource()) {
+        try {
             String dtoJson = objectMapper.writeValueAsString(freelancerDetailsDto);
-            jedis.set(freelancerDataKey, dtoJson);
+            jedisConn.setex(freelancerDataKey, 30, dtoJson); // TODO: remove ttl
         }
         catch (Exception ex) {
             throw new RuntimeException("Putting object to cache was unsuccessful", ex);
         }
     }
 
-    public List<String> getLeaderboardFreelancerIds(String sortBy, int limit, int skip) {
+    public List<String> getLeaderboardFreelancerIds(String sortBy, int limit, int skip, Jedis jedisConn) {
         String leaderboardKey = String.format("leaderboard:%s:%d:%d", sortBy, limit, skip);
 
-        try (Jedis jedis = jedisPool.getResource()) { 
-            if (!jedis.exists(leaderboardKey)) {
+        try { 
+            if (!jedisConn.exists(leaderboardKey)) {
                 return null;
             }
             
-            List<String> cachedIds = jedis.lrange(leaderboardKey, 0, -1);
+            List<String> cachedIds = jedisConn.lrange(leaderboardKey, 0, -1);
             return cachedIds;
         }
         catch (Exception ex) {
@@ -67,16 +71,16 @@ public class FreelancerCacheRepository {
         }
     }
 
-    public void setLeaderboardFreelancerIds(String sortBy, int limit, int skip, List<String> freelancerIds) {
+    public void setLeaderboardFreelancerIds(String sortBy, int limit, int skip, List<String> freelancerIds, Jedis jedisConn) {
         if (freelancerIds == null) {
             return;
         }
 
         String leaderboardKey = String.format("leaderboard:%s:%d:%d", sortBy, limit, skip);
-        try (Jedis jedis = jedisPool.getResource()) { 
-            jedis.del(leaderboardKey); // TODO: should it be deleted?
-            jedis.rpush(leaderboardKey, freelancerIds.toArray(new String[0]));
-            jedis.expire(leaderboardKey, 300); // TODO: remove after invalidation is in place
+        try { 
+            jedisConn.del(leaderboardKey); // TODO: should it be deleted?
+            jedisConn.rpush(leaderboardKey, freelancerIds.toArray(new String[0]));
+            jedisConn.expire(leaderboardKey, 30); // TODO: remove after invalidation is in place
         }
         catch (Exception ex) {
             throw new RuntimeException("Putting object to cache was unsuccessful", ex);

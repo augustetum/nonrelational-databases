@@ -13,18 +13,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dto.FreelancerDetailsDto;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Jedis;
+import repository.FreelancerCacheRepository;
 import repository.FreelancerRepository;
 
 @Service
 public class FreelancerService {
     private final FreelancerRepository freelancerRepository;
+    private final FreelancerCacheRepository freelancerCacheRepository;
+    
     private final BookingService bookingService;
 
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
 
-    public FreelancerService(FreelancerRepository freelancerRepository, BookingService bookingService, JedisPool jedisPool, ObjectMapper objectMapper) {
+    public FreelancerService(FreelancerRepository freelancerRepository, FreelancerCacheRepository freelancerCacheRepository, BookingService bookingService, JedisPool jedisPool, ObjectMapper objectMapper) {
         this.freelancerRepository = freelancerRepository;
+        this.freelancerCacheRepository = freelancerCacheRepository;
         this.bookingService = bookingService;
 
         this.jedisPool = jedisPool;
@@ -32,37 +36,19 @@ public class FreelancerService {
     }
 
     public Optional<FreelancerDetailsDto> getFreelancerDetails(String userId) {
-        Optional<FreelancerDetailsDto> maybeDetailsDto;
-        String freelancerDataKey = String.format("freelancers:%s", userId);
-
-        try (Jedis jedis = jedisPool.getResource()) {
-            String cachedData = jedis.get(freelancerDataKey);
-
-            if (cachedData != null) {
-                FreelancerDetailsDto freelancerDetailsDto = objectMapper.readValue(cachedData, FreelancerDetailsDto.class);
-                maybeDetailsDto = Optional.of(freelancerDetailsDto);
-            }
-            else {
-                maybeDetailsDto = freelancerRepository.getDetails(userId);
-            }
-
-            return maybeDetailsDto;
-        }
-        catch (Exception ex) {
-            System.out.println("Problem with redis");
+        FreelancerDetailsDto cachedData = freelancerCacheRepository.getFreelancerDetails(userId);
+        if (cachedData != null) {
+            return Optional.of(cachedData);
         }
 
-        return Optional.empty();
-    }
+        Optional<FreelancerDetailsDto> maybeDetailsDto = freelancerRepository.getDetails(userId);
 
-    public List<LocalDate> getAvailableDates(String userId) {
-        List<LocalDate> bookedDates = bookingService.getBookedDates(userId);
-        LocalDate startDate = LocalDate.now();
-        LocalDate endDate = startDate.plusMonths(1);
-        List<LocalDate> freeDates = startDate.datesUntil(endDate)
-                .collect(Collectors.toList());
-        freeDates.removeAll(bookedDates);
-        return freeDates;
+        if (maybeDetailsDto.isPresent()) {
+            FreelancerDetailsDto dto = maybeDetailsDto.get();
+            freelancerCacheRepository.setFreelancerDetails(dto);
+        }
+
+        return maybeDetailsDto;
     }
     
     public List<FreelancerDetailsDto> getLeaderboard(String sortBy, int limit, int skip) {
@@ -75,9 +61,11 @@ public class FreelancerService {
             List<FreelancerDetailsDto> freelancerDetailsList;
 
             if (jedis.exists(leaderboardKey)) {
-                List<String> cachedIds = jedis.lrange(leaderboardKey, 0, -1);
+                System.out.println("list from cache");
+
                 freelancerDetailsList = new ArrayList<FreelancerDetailsDto>();
-                
+                List<String> cachedIds = jedis.lrange(leaderboardKey, 0, -1);
+
                 for (String id : cachedIds) {
                     Optional<FreelancerDetailsDto> maybeDetails = getFreelancerDetails(id);
                     
@@ -95,16 +83,28 @@ public class FreelancerService {
             freelancerDetailsList = freelancerRepository.getLeaderboard(sortBy, limit, skip);
             List<String> freelancerIds = freelancerDetailsList.stream().map(FreelancerDetailsDto::getId).collect(Collectors.toList());
 
-            if (freelancerIds != null && !freelancerIds.isEmpty()) {
+            if (freelancerIds != null) {
+                System.out.println("list from db");
+
                 jedis.del(leaderboardKey);
                 jedis.rpush(leaderboardKey, freelancerIds.toArray(new String[0]));
-                jedis.expire(leaderboardKey, 300);
+                jedis.expire(leaderboardKey, 300); // TODO: delete later
             }
 
             return freelancerDetailsList;
         }
         catch(Exception ex) {
-            throw new RuntimeException("Failed to retrieve freelancer details", ex);
+            throw new RuntimeException("Failed to retrieve freelancer leaderboard", ex);
         }
+    }
+
+    public List<LocalDate> getAvailableDates(String userId) {
+        List<LocalDate> bookedDates = bookingService.getBookedDates(userId);
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = startDate.plusMonths(1);
+        List<LocalDate> freeDates = startDate.datesUntil(endDate)
+                .collect(Collectors.toList());
+        freeDates.removeAll(bookedDates);
+        return freeDates;
     }
 }

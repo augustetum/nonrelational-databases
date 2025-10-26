@@ -20,6 +20,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import config.MongoDbContext;
 import dto.FreelancerDetailsDto;
+import dto.FreelancerRatingLeaderboardDto;
 import util.IdentifierGenerator;
 
 @Repository
@@ -77,6 +78,40 @@ public class FreelancerRepository {
         FreelancerDetailsDto freelancerDetails = convertDocumentToFreelancerDetails(document);
 
         return Optional.of(freelancerDetails);
+    }
+
+    public List<FreelancerRatingLeaderboardDto> getRatingLeaderboard(int limit, int skip) {
+        List<Bson> pipeline = new ArrayList<>();
+
+        // project fields with calculated metrics
+        pipeline.add(Aggregates.project(Projections.fields(
+            Projections.computed("averageRating",
+                new Document("$ifNull", Arrays.asList(
+                    new Document("$avg", "$reviews.rating"),
+                    null
+                ))
+            ),
+            Projections.computed("reviewNum",
+                new Document("$ifNull", Arrays.asList(
+                    new Document("$size", "$reviews"),
+                    0
+                ))
+            ),
+            Projections.include("firstName", "lastName")
+        )));
+
+        // sort entries
+        pipeline.add(Aggregates.sort(Sorts.descending("averageRating")));
+
+        // pagination
+        pipeline.add(Aggregates.skip(skip));
+        pipeline.add(Aggregates.limit(limit));
+
+        return collection.aggregate(pipeline)
+            .into(new ArrayList<>())
+            .stream()
+            .map(this::convertDocumentToRatingLeaderboardDto)
+            .toList();
     }
 
     public List<FreelancerDetailsDto> getLeaderboard(String sortBy, int limit, int skip) {
@@ -196,6 +231,30 @@ public class FreelancerRepository {
                 .build();
     }
 
+    private FreelancerRatingLeaderboardDto convertDocumentToRatingLeaderboardDto(Document document) {
+        FreelancerRatingLeaderboardDto dto = new FreelancerRatingLeaderboardDto();
 
+        String id = document.getString("_id");
+        dto.setId(id);
 
+        String firstName = document.getString("firstName");
+        dto.setFirstName(firstName);
+
+        String lastName = document.getString("lastName");
+        dto.setLastName(lastName);
+
+        Decimal128 ratingDecimal = document.get("averageRating", Decimal128.class);
+        BigDecimal rating = null;
+
+        if (ratingDecimal != null) {
+            rating = ratingDecimal.bigDecimalValue().setScale(2, RoundingMode.HALF_UP);
+        }
+        
+        dto.setRating(rating);
+
+        int reviewNum = document.getInteger("reviewNum");
+        dto.setReviewNum(reviewNum);
+
+        return dto;
+    }
 }

@@ -7,8 +7,8 @@ import entity.Review;
 import entity.ReviewId;
 import redis.clients.jedis.Jedis;
 import repository.ClientReviewRepository;
-import repository.FreelancerCacheRepository;
 import repository.FreelancerReviewRepository;
+import repository.cache.FreelancerCacheRepository;
 
 @Service
 public class ReviewService {

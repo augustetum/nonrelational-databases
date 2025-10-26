@@ -5,7 +5,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import entity.BookingStatus;
 import repository.BookingRepository;
-import repository.FreelancerCacheRepository;
+import repository.cache.FreelancerCacheRepository;
 
 import org.springframework.stereotype.Service;
 

@@ -70,9 +70,10 @@ public class LeaderboardCacheRepository extends CacheRepository {
         String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
         Map<String, String> updatedFields;
 
-        jedisConn.watch(leaderboardKey, entryDetailsKey); // TODO: resolve
+        jedisConn.watch(leaderboardKey, entryDetailsKey);
         
         if (!jedisConn.exists(leaderboardKey)) {
+            jedisConn.unwatch();
             return;
         }
 
@@ -98,7 +99,10 @@ public class LeaderboardCacheRepository extends CacheRepository {
             double compositeScore = calculateCompositeScore(newAvgRating, newReviewNum);
             transaction.zadd(leaderboardKey, compositeScore, freelancerId);
 
-            transaction.exec();
+            List<Object> results = transaction.exec();
+            if (results == null) {
+                throw new IllegalStateException("Concurrent modification detected while updating leaderboard entry for freelancer: " + freelancerId);
+            }
         }
         catch (Exception ex) {
             transaction.discard();

@@ -5,6 +5,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import entity.BookingStatus;
 import repository.BookingRepository;
+import repository.FreelancerCacheRepository;
 
 import org.springframework.stereotype.Service;
 
@@ -20,15 +21,20 @@ import java.util.stream.Collectors;
 @Service
 public class BookingService {
     private final BookingRepository repository;
+    private final FreelancerCacheRepository freelancerCacheRepository;
+
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
+
     private static final int RESERVATION_TTL_SECONDS = 600;
 
-    public BookingService(BookingRepository repository, JedisPool jedisPool, ObjectMapper objectMapper) {
+    public BookingService(BookingRepository repository, FreelancerCacheRepository freelancerCacheRepository, JedisPool jedisPool, ObjectMapper objectMapper) {
         this.repository = repository;
         this.jedisPool = jedisPool;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+
+        this.freelancerCacheRepository = freelancerCacheRepository;
     }
 
     public List<Booking> getAllBookings() {
@@ -153,5 +159,12 @@ public class BookingService {
 
     public void updateBookingStatus(String bookingId, BookingStatus status){
         repository.updateStatus(bookingId, status);
+        Booking booking = repository.getById(bookingId);
+
+        if (status == BookingStatus.COMPLETED) {
+            try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
+                freelancerCacheRepository.invalidateFreelancer(booking.getFreelancerId(), jedisConn);
+            }
+        }
     }
 }

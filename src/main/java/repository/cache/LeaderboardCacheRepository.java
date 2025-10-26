@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dto.FreelancerJobsCompletedLeaderboardDto;
 import dto.FreelancerRatingLeaderboardDto;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -53,50 +52,31 @@ public class LeaderboardCacheRepository extends CacheRepository {
         List<FreelancerRatingLeaderboardDto> leaderboardDetails = new ArrayList<>();
 
         for (Tuple pair : leaderboard) {            
-            FreelancerRatingLeaderboardDto dto = new FreelancerRatingLeaderboardDto();
-            
-            // set freelancer id
             String freelancerId = pair.getElement();
-            dto.setId(freelancerId);
-
             // retrieve entry details
-            Response<Map<String, String>> entryInfo = leaderboardEntries.get(freelancerId);
+            Response<Map<String, String>> entryResponse = leaderboardEntries.get(freelancerId);
+            Map<String, String> entry = entryResponse.get();
 
-            // set freelancer first name
-            String firstName = entryInfo.get().get("firstName");
-            dto.setFirstName(firstName);
-            
-            // set freelancer last name
-            String lastName = entryInfo.get().get("lastName");
-            dto.setLastName(lastName);
-
-            // set freelancer average rating
-            double rating = pair.getScore();
-            BigDecimal ratingBigDecimal = null;
-            
-            if (rating != -1) {
-                ratingBigDecimal = BigDecimal.valueOf(rating);
-            }
-
-            dto.setRating(ratingBigDecimal);
-            
-            // set freelancer review number
-            String reviewNumStr = entryInfo.get().get("reviewNum");
-            int reviewNum = Integer.valueOf(reviewNumStr);
-            dto.setReviewNum(reviewNum);
-
+            FreelancerRatingLeaderboardDto dto = buildLeaderboardDto(freelancerId, entry);
             leaderboardDetails.add(dto);
         }
 
         return leaderboardDetails;
     }
 
+    public FreelancerRatingLeaderboardDto getLeaderboardEntry(String freelancerId, Jedis jedisConn) {
+        String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        Map<String, String> entry = jedisConn.hgetAll(entryKey);
+
+        return buildLeaderboardDto(freelancerId, entry);
+    }
+
     public void setAverageRatingLeaderboard(List<FreelancerRatingLeaderboardDto> leaderboardDetails, Jedis jedisConn) {
         Map<String, Double> ratings = new HashMap<>();
         
-        for (FreelancerRatingLeaderboardDto dto : leaderboardDetails) {
+        for (FreelancerRatingLeaderboardDto dto : leaderboardDetails) {    
             String freelancerId = dto.getId();
-            
+
             BigDecimal ratingBigDecimal = dto.getRating();
             double rating = -1;
 
@@ -105,48 +85,24 @@ public class LeaderboardCacheRepository extends CacheRepository {
             }
 
             ratings.put(freelancerId, rating);
-
-            // add freelancer details
-            Map<String, String> hash = new HashMap<>();
-
-            hash.put("firstName", dto.getFirstName());
-            hash.put("lastName", dto.getLastName());
-            hash.put("rating", String.valueOf(rating));
-            hash.put("reviewNum", String.valueOf(dto.getReviewNum()));
             
+            // create leaderboard entry details
             String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+            Map<String, String> hash =  buildLeaderboardEntryHashMap(dto);
+            
             jedisConn.hset(entryKey, hash);
         }
 
+        // create leaderboard
         String leaderboardKey = buildLeaderboardKey("averageRating");
         jedisConn.zadd(leaderboardKey, ratings);
     }
 
-    public void setJobsCompletedLeaderboard(List<FreelancerJobsCompletedLeaderboardDto> leaderboardDetails, Jedis jedisConn) {
-        Map<String, Double> jobsCompletedMap = new HashMap<>();
-        
-        for (FreelancerJobsCompletedLeaderboardDto dto : leaderboardDetails) {
-            // append to leaderboard structure
-            String freelancerId = dto.getId();
+    public void updateAverageRatingLeaderboard(FreelancerRatingLeaderboardDto dto, Jedis jedisConn) {
+        String entryKey = buildLeaderboardEntryKey("averageRating", dto.getId());
+        Map<String, String> hash = buildLeaderboardEntryHashMap(dto);
 
-            int jobsCompletedInt = dto.getJobsCompleted();
-            Double jobsCompleted = (double)jobsCompletedInt;
-
-            jobsCompletedMap.put(freelancerId, jobsCompleted);
-
-            // add freelancer details
-            Map<String, String> hash = new HashMap<>();
-
-            hash.put("firstName", dto.getFirstName());
-            hash.put("lastName", dto.getLastName());
-            hash.put("jobsCompleted", String.valueOf(jobsCompleted));
-            
-            String entryKey = buildLeaderboardEntryKey("jobCompleted", freelancerId);
-            jedisConn.hset(entryKey, hash);
-        }
-
-        String leaderboardKey = buildLeaderboardKey("averageRating");
-        jedisConn.zadd(leaderboardKey, jobsCompletedMap);
+        jedisConn.hset(entryKey, hash);
     }
 
     private String buildLeaderboardKey(String sortBy) {
@@ -155,5 +111,58 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
     private String buildLeaderboardEntryKey(String sortBy, String freelancerId) {
         return String.format("leaderboard:%s:%s", sortBy, freelancerId);
+    }
+
+    private Map<String, String> buildLeaderboardEntryHashMap(FreelancerRatingLeaderboardDto dto) {
+        Map<String, String> hash = new HashMap<>();
+        
+        // retrieve rating
+        BigDecimal ratingBigDecimal = dto.getRating();
+        double rating = -1;
+
+        if (ratingBigDecimal != null) {
+            rating = ratingBigDecimal.doubleValue();
+        }
+        
+        // create hash-map
+        hash.put("firstName", dto.getFirstName());
+        hash.put("lastName", dto.getLastName());
+        hash.put("rating", String.valueOf(rating));
+        hash.put("reviewNum", String.valueOf(dto.getReviewNum()));
+
+        return hash;
+    }
+
+    private FreelancerRatingLeaderboardDto buildLeaderboardDto(String freelancerId, Map<String, String> entry) {
+        FreelancerRatingLeaderboardDto dto = new FreelancerRatingLeaderboardDto();
+        
+        // set freelancer id
+        dto.setId(freelancerId);
+
+        // set freelancer first name
+        String firstName = entry.get("firstName");
+        dto.setFirstName(firstName);
+        
+        // set freelancer last name
+        String lastName = entry.get("lastName");
+        dto.setLastName(lastName);
+
+        // set freelancer average rating
+        String ratingStr = entry.get("rating");
+        Double ratingDouble = Double.parseDouble(ratingStr);
+        BigDecimal ratingBigDecimal = null;
+
+        if (ratingDouble != -1) {
+            ratingBigDecimal = BigDecimal.valueOf(ratingDouble);
+        }
+
+        dto.setRating(ratingBigDecimal);
+        
+        // set freelancer review number
+        String reviewNumStr = entry.get("reviewNum");
+        int reviewNum = Integer.valueOf(reviewNumStr);
+        dto.setReviewNum(reviewNum);
+
+        return dto;
     }
 }

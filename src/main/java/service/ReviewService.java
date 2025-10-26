@@ -60,7 +60,7 @@ public class ReviewService {
                 // TODO: add transaction?
                 if (leaderboardCacheRepository.leaderboardExists(jedisConn))
                 {
-                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
+                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getEntryDetails(reviewId.revieweeId(), jedisConn);
                     
                     // re-calculate average rating
                     BigDecimal reviewRatingBigDecimal = review.getRating();
@@ -110,7 +110,7 @@ public class ReviewService {
 
                 if (leaderboardCacheRepository.leaderboardExists(jedisConn))
                 {
-                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
+                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getEntryDetails(reviewId.revieweeId(), jedisConn);
                     
                     // re-calculate average rating
                     BigDecimal reviewRatingBigDecimal = review.getRating();
@@ -155,7 +155,7 @@ public class ReviewService {
                 // TODO: add transaction?
                 if (leaderboardCacheRepository.leaderboardExists(jedisConn))
                 {
-                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(id.revieweeId(), jedisConn);
+                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getEntryDetails(id.revieweeId(), jedisConn);
                     
                     // re-calculate average rating
                     BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();

@@ -59,18 +59,17 @@ public class LeaderboardCacheRepository extends CacheRepository {
             Response<Map<String, String>> entryResponse = leaderboardEntries.get(freelancerId);
             Map<String, String> entry = entryResponse.get();
 
-            LeaderboardDetailsDto dto = buildLeaderboardDto(freelancerId, entry);
+            LeaderboardDetailsDto dto = LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entry);
             leaderboardDetails.add(dto);
         }
 
         return leaderboardDetails;
     }
 
-    public LeaderboardDetailsDto getLeaderboardEntry(String freelancerId, Jedis jedisConn) {
+    public LeaderboardDetailsDto getEntryDetails(String freelancerId, Jedis jedisConn) {
         String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-        Map<String, String> entry = jedisConn.hgetAll(entryKey);
-
-        return buildLeaderboardDto(freelancerId, entry);
+        Map<String, String> entryDetails = jedisConn.hgetAll(entryKey);
+        return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
     }
 
     public void setLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
@@ -88,7 +87,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
                 // add leaderboard entry details
                 String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-                HashMap<String, String> entryDetails = LeaderboardDetailsMapper.toHashMap(detailsDto);
+                Map<String, String> entryDetails = LeaderboardDetailsMapper.toMap(detailsDto);
                 transaction.hset(entryDetailsKey, entryDetails);
             }
 
@@ -135,39 +134,6 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
     private String buildLeaderboardEntryKey(String sortBy, String freelancerId) {
         return String.format("leaderboard:%s:%s", sortBy, freelancerId);
-    }
-
-    private LeaderboardDetailsDto buildLeaderboardDto(String freelancerId, Map<String, String> entry) {
-        LeaderboardDetailsDto dto = new LeaderboardDetailsDto();
-        
-        // set freelancer id
-        dto.setId(freelancerId);
-
-        // set freelancer first name
-        String firstName = entry.get("firstName");
-        dto.setFirstName(firstName);
-        
-        // set freelancer last name
-        String lastName = entry.get("lastName");
-        dto.setLastName(lastName);
-
-        // set freelancer average rating
-        String ratingStr = entry.get("rating");
-        Double ratingDouble = Double.parseDouble(ratingStr);
-        BigDecimal ratingBigDecimal = null;
-
-        if (ratingDouble != -1) {
-            ratingBigDecimal = BigDecimal.valueOf(ratingDouble);
-        }
-
-        dto.setRating(ratingBigDecimal);
-        
-        // set freelancer review number
-        String reviewNumStr = entry.get("reviewNum");
-        int reviewNum = Integer.valueOf(reviewNumStr);
-        dto.setReviewNum(reviewNum);
-
-        return dto;
     }
 
     private double calculateCompositeScore(LeaderboardDetailsDto dto) {

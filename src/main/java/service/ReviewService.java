@@ -169,7 +169,6 @@ public class ReviewService {
                     updatedAvgRating = (avgRating * reviewNum - oldReviewRating) / updatedReviewNum;
                 }
 
-
                 BigDecimal updatedAvgRatingBigDecimal = null;
 
                 if (updatedReviewNum != 0) {
@@ -179,7 +178,6 @@ public class ReviewService {
                 cachedDto.setRating(updatedAvgRatingBigDecimal);
                 cachedDto.setReviewNum(updatedReviewNum);
                 
-                // TODO: what if now theres no reviews?
                 leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
             }
 

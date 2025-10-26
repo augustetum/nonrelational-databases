@@ -11,23 +11,34 @@ import dto.FreelancerDetailsDto;
 import dto.FreelancerRatingLeaderboardDto;
 import redis.clients.jedis.Jedis;
 import repository.FreelancerRepository;
+import repository.LeaderboardRepository;
 import repository.cache.FreelancerCacheRepository;
 import repository.cache.LeaderboardCacheRepository;
 
 @Service
 public class FreelancerService {
     private final FreelancerRepository freelancerRepository;
-    private final BookingService bookingService;
- 
+    private final LeaderboardRepository leaderboardRepository;
+
     private final FreelancerCacheRepository freelancerCacheRepository;
     private final LeaderboardCacheRepository leaderboardCacheRepository;   
+    
+    private final BookingService bookingService;
 
-    public FreelancerService(FreelancerRepository freelancerRepository, FreelancerCacheRepository freelancerCacheRepository, LeaderboardCacheRepository leaderboardCacheRepository, BookingService bookingService) {
+    public FreelancerService(
+        FreelancerRepository freelancerRepository, 
+        FreelancerCacheRepository freelancerCacheRepository, 
+        LeaderboardRepository leaderboardRepository,
+        LeaderboardCacheRepository leaderboardCacheRepository, 
+        BookingService bookingService
+    ) {
         this.freelancerRepository = freelancerRepository;
-        this.bookingService = bookingService;
-
+        this.leaderboardRepository = leaderboardRepository;
+        
         this.freelancerCacheRepository = freelancerCacheRepository;
         this.leaderboardCacheRepository = leaderboardCacheRepository;
+
+        this.bookingService = bookingService;
     }
 
     public Optional<FreelancerDetailsDto> getFreelancerDetails(String userId) {
@@ -64,7 +75,7 @@ public class FreelancerService {
 
         // cache miss logic
         // TODO: add pagination
-        leaderboardDetails = freelancerRepository.getRatingLeaderboard(limit, skip);
+        leaderboardDetails = leaderboardRepository.getRatingLeaderboard(limit, skip);
 
         try (Jedis jedisConn = leaderboardCacheRepository.getJedisConnection()) {
             leaderboardCacheRepository.setAverageRatingLeaderboard(leaderboardDetails, jedisConn);

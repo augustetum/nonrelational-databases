@@ -123,27 +123,15 @@ public class LeaderboardCacheRepository extends CacheRepository {
                 return;
             }
 
+            // re-calculate rating & update leaderboard
             LeaderboardDetailsDto detailsDto = getEntryDetails(leaderboardKey, transaction);
 
-            // convert fields to double
-            BigDecimal reviewRating = review.getRating();
-            BigDecimal avgRating = detailsDto.getRating();
-
-            if (avgRating == null) {
-                avgRating = BigDecimal.ZERO;
-            }
-
-            double reviewRatingDouble = reviewRating.doubleValue();
-            double avgRatingDouble = avgRating.doubleValue();
+            BigDecimal newRating = review.getRating();
+            BigDecimal oldAvgRating = detailsDto.getRating();
             int reviewNum = detailsDto.getReviewNum();
             
-            // re-calculate rating
-            int updatedReviewNum = reviewNum + 1;
-            double updatedAvgRating = (avgRatingDouble * reviewNum + reviewRatingDouble) / updatedReviewNum;
-            
-            // update leaderboard
-            avgRating = BigDecimal.valueOf(updatedAvgRating);
-            updateEntry(freelancerId, avgRating, updatedReviewNum, transaction);
+            BigDecimal newAvgRating = calculateRating(oldAvgRating, BigDecimal.ZERO, reviewNum, newRating, reviewNum + 1);
+            updateEntry(freelancerId, newAvgRating, reviewNum, transaction);
 
             transaction.exec();
         }
@@ -154,9 +142,8 @@ public class LeaderboardCacheRepository extends CacheRepository {
     }
 
     public void updateEntryDetails(Review oldReview, Review newReview, Jedis jedisConn) {
-        String freelancerId = review.getId().revieweeId();
+        String freelancerId = oldReview.getId().revieweeId();
         String leaderboardKey = buildLeaderboardKey("averageRating");
-        Map<String, String> updatedFields;
 
         jedisConn.watch(leaderboardKey); // TODO: resolve
         Transaction transaction = jedisConn.multi();
@@ -165,37 +152,16 @@ public class LeaderboardCacheRepository extends CacheRepository {
                 return;
             }
 
+            // re-calculate rating & update leaderboard
             LeaderboardDetailsDto detailsDto = getEntryDetails(leaderboardKey, transaction);
 
-            // convert fields to double
-            BigDecimal reviewRating = review.getRating();
-            BigDecimal avgRating = detailsDto.getRating();
-
-            if (avgRating == null) {
-                avgRating = BigDecimal.ZERO;
-            }
-
-            double reviewRatingDouble = reviewRating.doubleValue();
-            double avgRatingDouble = avgRating.doubleValue();
+            BigDecimal oldRating = oldReview.getRating();
+            BigDecimal newRating = newReview.getRating();
+            BigDecimal oldAvgRating = detailsDto.getRating();
             int reviewNum = detailsDto.getReviewNum();
             
-            // re-calculate rating
-            int updatedReviewNum = reviewNum + 1;
-            double updatedAvgRating = (avgRatingDouble * reviewNum + reviewRatingDouble) / updatedReviewNum;
-            
-            // update leaderboard entry details
-            avgRating = BigDecimal.valueOf(updatedAvgRating);
-
-            updatedFields = Map.of(
-                "rating", avgRating.toString(),
-                "reviewNum", String.valueOf(reviewNum)
-            );
-
-            transaction.hset(entryDetailsKey, updatedFields);
-
-            // re-calculate new composite score
-            double compositeScore = calculateCompositeScore(avgRating, updatedReviewNum);
-            transaction.zadd(leaderboardKey, compositeScore, freelancerId);
+            BigDecimal newAvgRating = calculateRating(oldAvgRating, oldRating, reviewNum, newRating, reviewNum);
+            updateEntry(freelancerId, newAvgRating, reviewNum, transaction);
 
             transaction.exec();
         }
@@ -255,6 +221,19 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
     private double calculateCompositeScore(LeaderboardDetailsDto dto) {
         return calculateCompositeScore(dto.getRating(), dto.getReviewNum());
+    }
+
+    private BigDecimal calculateRating(BigDecimal oldAvgRating, BigDecimal oldRating, int oldReviewNum, BigDecimal newRating, int newReviewNum) {
+        if (oldAvgRating == null) {
+            oldAvgRating = BigDecimal.ZERO;
+        }
+
+        double oldAvgRatingDouble = oldAvgRating.doubleValue();
+        double oldRatingDouble = oldRating.doubleValue();
+        double newRatingDouble = newRating.doubleValue();
+        
+        double newAvgRatingDouble = (oldAvgRatingDouble * oldReviewNum - oldRatingDouble + newRatingDouble) / newReviewNum;
+        return BigDecimal.valueOf(newAvgRatingDouble);
     }
 
     private double calculateCompositeScore(BigDecimal ratingBigDecimal, int reviewNum) {

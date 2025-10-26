@@ -1,12 +1,9 @@
 package service;
 
-import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import dto.LeaderboardDetailsDto;
 import entity.Review;
 import entity.ReviewId;
 import redis.clients.jedis.Jedis;
@@ -46,9 +43,8 @@ public class ReviewService {
             String freelancerId = review.getId().revieweeId();
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
-                // invalidate freelancer details
                 freelancerCacheRepository.invalidateFreelancer(freelancerId, jedisConn);
-                leaderboardCacheRepository.updateEntryDetails(review, jedisConn);
+                leaderboardCacheRepository.updateEntryDetailsOnAdd(review, jedisConn);
             }
 
             // db changes
@@ -62,41 +58,13 @@ public class ReviewService {
     public void editReview(Review review, boolean isClient) {
         if (isClient) {
             // update cache
-            ReviewId reviewId = review.getId();
-            Review oldReview = freelancerReviewRepository.getByReviewId(reviewId.revieweeId(), reviewId.reviewId());
+            String freelancerId = review.getId().revieweeId();
+            String reviewId = review.getId().reviewId();
+            Review oldReview = freelancerReviewRepository.getByReviewId(freelancerId, reviewId);
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
-                // invalidate freelancer details
-                freelancerCacheRepository.invalidateFreelancer(reviewId.revieweeId(), jedisConn);
-
-                // change leaderboard
-                // TODO: add transaction?
-
-                if (leaderboardCacheRepository.leaderboardExists(jedisConn))
-                {
-                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getEntryDetails(reviewId.revieweeId(), jedisConn);
-                    
-                    // re-calculate average rating
-                    BigDecimal reviewRatingBigDecimal = review.getRating();
-                    BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();
-                    BigDecimal avgRatingBigDecimal = cachedDto.getRating();
-
-                    if (avgRatingBigDecimal == null) {
-                        avgRatingBigDecimal = BigDecimal.ZERO;
-                    }
-
-                    int reviewNum = cachedDto.getReviewNum();
-
-                    double reviewRating = reviewRatingBigDecimal.doubleValue();
-                    double oldReviewRating = oldReviewRatingBigDecimal.doubleValue(); 
-                    double avgRating = avgRatingBigDecimal.doubleValue();
-
-                    double updatedAvgRating = (avgRating * reviewNum - oldReviewRating + reviewRating) / reviewNum;
-
-                    BigDecimal updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
-
-                    leaderboardCacheRepository.updateAverageRatingLeaderboard(reviewId.revieweeId(), updatedAvgRatingBigDecimal, reviewNum, jedisConn);
-                }
+                freelancerCacheRepository.invalidateFreelancer(review.getId().revieweeId(), jedisConn);
+                leaderboardCacheRepository.updateEntryDetailsOnEdit(oldReview, review, jedisConn);
             }
 
             // db changes
@@ -114,45 +82,7 @@ public class ReviewService {
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
                 freelancerCacheRepository.invalidateFreelancer(id.revieweeId(), jedisConn);
-
-                // change leaderboard
-                // TODO: add transaction?
-                if (leaderboardCacheRepository.leaderboardExists(jedisConn))
-                {
-                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getEntryDetails(id.revieweeId(), jedisConn);
-                    
-                    // re-calculate average rating
-                    BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();
-                    BigDecimal avgRatingBigDecimal = cachedDto.getRating();
-
-                    if (avgRatingBigDecimal == null) {
-                        avgRatingBigDecimal = BigDecimal.ZERO;
-                    }
-
-                    int reviewNum = cachedDto.getReviewNum();
-
-                    double oldReviewRating = oldReviewRatingBigDecimal.doubleValue(); 
-                    double avgRating = avgRatingBigDecimal.doubleValue();
-
-                    int updatedReviewNum = reviewNum - 1;
-                    double updatedAvgRating = 0;
-                    
-                    if (updatedReviewNum != 0)
-                    {    
-                        updatedAvgRating = (avgRating * reviewNum - oldReviewRating) / updatedReviewNum;
-                    }
-
-                    BigDecimal updatedAvgRatingBigDecimal = null;
-
-                    if (updatedReviewNum != 0) {
-                        updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
-                    }
-                    
-                    cachedDto.setRating(updatedAvgRatingBigDecimal);
-                    cachedDto.setReviewNum(updatedReviewNum);
-                    
-                    leaderboardCacheRepository.updateAverageRatingLeaderboard(id.revieweeId(), updatedAvgRatingBigDecimal, reviewNum, jedisConn);
-                }
+                leaderboardCacheRepository.updateEntryDetailsOnRemove(oldReview, jedisConn);
             }
 
             // db changes

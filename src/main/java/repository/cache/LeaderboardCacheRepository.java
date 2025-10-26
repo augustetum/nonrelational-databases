@@ -112,38 +112,34 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return jedisConn.exists(leaderboardKey);
     }
 
-    public void updateEntryDetails(Review review, Jedis jedisConn) {
+    public void updateEntryDetailsOnAdd(Review review, Jedis jedisConn) {
         String freelancerId = review.getId().revieweeId();
-        String leaderboardKey = buildLeaderboardKey("averageRating");
-
-        jedisConn.watch(leaderboardKey); // TODO: resolve
-        Transaction transaction = jedisConn.multi();
-        try {
-            if (!jedisConn.exists(leaderboardKey)) {
-                return;
-            }
-
-            // re-calculate rating & update leaderboard
-            LeaderboardDetailsDto detailsDto = getEntryDetails(leaderboardKey, transaction);
-
-            BigDecimal newRating = review.getRating();
-            BigDecimal oldAvgRating = detailsDto.getRating();
-            int reviewNum = detailsDto.getReviewNum();
-            
-            BigDecimal newAvgRating = calculateRating(oldAvgRating, BigDecimal.ZERO, reviewNum, newRating, reviewNum + 1);
-            updateEntry(freelancerId, newAvgRating, reviewNum, transaction);
-
-            transaction.exec();
-        }
-        catch (Exception ex) {
-            transaction.discard();
-            throw ex;
-        }
+        BigDecimal oldRating = BigDecimal.ZERO;
+        BigDecimal newRating = review.getRating();
+        
+        updateEntryDetails(freelancerId, oldRating, newRating, 1, jedisConn);
     }
 
-    public void updateEntryDetails(Review oldReview, Review newReview, Jedis jedisConn) {
+    public void updateEntryDetailsOnEdit(Review oldReview, Review newReview, Jedis jedisConn) {
         String freelancerId = oldReview.getId().revieweeId();
+        BigDecimal oldRating = oldReview.getRating();
+        BigDecimal newRating = newReview.getRating();
+
+        updateEntryDetails(freelancerId, oldRating, newRating, 0, jedisConn);
+    }
+
+    public void updateEntryDetailsOnRemove(Review oldReview, Jedis jedisConn) {
+        String freelancerId = oldReview.getId().revieweeId();
+        BigDecimal oldRating = oldReview.getRating();
+        BigDecimal newRating = BigDecimal.ZERO;
+
+        updateEntryDetails(freelancerId, oldRating, newRating, -1, jedisConn);
+    }
+
+    private void updateEntryDetails(String freelancerId, BigDecimal oldRating, BigDecimal newRating, int reviewNumChange, Jedis jedisConn) {
         String leaderboardKey = buildLeaderboardKey("averageRating");
+        String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        Map<String, String> updatedFields;
 
         jedisConn.watch(leaderboardKey); // TODO: resolve
         Transaction transaction = jedisConn.multi();
@@ -152,16 +148,25 @@ public class LeaderboardCacheRepository extends CacheRepository {
                 return;
             }
 
-            // re-calculate rating & update leaderboard
-            LeaderboardDetailsDto detailsDto = getEntryDetails(leaderboardKey, transaction);
+            // re-calculate rating
+            LeaderboardDetailsDto detailsDto = getEntryDetails(freelancerId, transaction);
 
-            BigDecimal oldRating = oldReview.getRating();
-            BigDecimal newRating = newReview.getRating();
             BigDecimal oldAvgRating = detailsDto.getRating();
-            int reviewNum = detailsDto.getReviewNum();
-            
-            BigDecimal newAvgRating = calculateRating(oldAvgRating, oldRating, reviewNum, newRating, reviewNum);
-            updateEntry(freelancerId, newAvgRating, reviewNum, transaction);
+            int oldReviewNum = detailsDto.getReviewNum();
+            int newReviewNum = oldReviewNum + reviewNumChange;
+
+            BigDecimal newAvgRating = calculateRating(oldAvgRating, oldRating, oldReviewNum, newRating, newReviewNum);
+
+            // update leaderboard entry details
+            updatedFields = Map.of(
+                "rating", newAvgRating.toString(),
+                "reviewNum", String.valueOf(newReviewNum)
+            );
+            transaction.hset(entryDetailsKey, updatedFields);
+
+            // update leaderboard
+            double compositeScore = calculateCompositeScore(newAvgRating, newReviewNum);
+            transaction.zadd(leaderboardKey, compositeScore, freelancerId);
 
             transaction.exec();
         }
@@ -169,46 +174,6 @@ public class LeaderboardCacheRepository extends CacheRepository {
             transaction.discard();
             throw ex;
         }
-    }
-
-    private void updateEntry(String freelancerId, BigDecimal avgRating, int reviewNum, Transaction transaction) {
-        // update leaderboard entry details
-        String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-        
-        Map<String, String> updatedFields = Map.of(
-            "rating", avgRating.toString(),
-            "reviewNum", String.valueOf(reviewNum)
-        );
-
-        transaction.hset(entryDetailsKey, updatedFields);
-
-        // update leaderboard
-        String leaderboardKey = buildLeaderboardKey("averageRating");
-        double compositeScore = calculateCompositeScore(avgRating, reviewNum);
-        transaction.zadd(leaderboardKey, compositeScore, freelancerId);
-    }
-
-    public void updateAverageRatingLeaderboard(String freelancerId, BigDecimal avgRating, int reviewNum, Jedis jedisConn) {
-        String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-        String leaderboardKey = buildLeaderboardKey("averageRating");
-        
-        Map<String, String> entryFields = new HashMap<>();
-        entryFields.put("rating", String.valueOf(avgRating));
-        entryFields.put("reviewNum", String.valueOf(reviewNum));
-
-        double compositeScore = calculateCompositeScore(avgRating, reviewNum);
-
-        // apply changes
-        Transaction transaction = jedisConn.multi();
-        try {
-            transaction.hset(entryKey, entryFields);
-            transaction.zadd(leaderboardKey, compositeScore, freelancerId);
-            transaction.exec();
-        }
-        catch (Exception ex){
-            transaction.discard();
-            throw ex;
-        }       
     }
 
     private String buildLeaderboardKey(String sortBy) {
@@ -217,10 +182,6 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
     private String buildLeaderboardEntryKey(String sortBy, String freelancerId) {
         return String.format("leaderboard:%s:%s", sortBy, freelancerId);
-    }
-
-    private double calculateCompositeScore(LeaderboardDetailsDto dto) {
-        return calculateCompositeScore(dto.getRating(), dto.getReviewNum());
     }
 
     private BigDecimal calculateRating(BigDecimal oldAvgRating, BigDecimal oldRating, int oldReviewNum, BigDecimal newRating, int newReviewNum) {
@@ -234,6 +195,10 @@ public class LeaderboardCacheRepository extends CacheRepository {
         
         double newAvgRatingDouble = (oldAvgRatingDouble * oldReviewNum - oldRatingDouble + newRatingDouble) / newReviewNum;
         return BigDecimal.valueOf(newAvgRatingDouble);
+    }
+
+    private double calculateCompositeScore(LeaderboardDetailsDto dto) {
+        return calculateCompositeScore(dto.getRating(), dto.getReviewNum());
     }
 
     private double calculateCompositeScore(BigDecimal ratingBigDecimal, int reviewNum) {

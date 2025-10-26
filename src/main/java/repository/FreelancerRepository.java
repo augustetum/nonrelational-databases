@@ -1,6 +1,7 @@
 package repository;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +50,7 @@ public class FreelancerRepository {
                 Projections.computed("averageRating",
                     new Document("$ifNull", Arrays.asList(
                         new Document("$avg", "$reviews.rating"),
-                        BigDecimal.ZERO
+                        null
                     ))
                 ),
                 Projections.computed("jobsCompleted",
@@ -89,7 +90,7 @@ public class FreelancerRepository {
             Projections.computed("averageRating",
                 new Document("$ifNull", Arrays.asList(
                     new Document("$avg", "$reviews.rating"),
-                    BigDecimal.ZERO
+                    null
                 ))
             ),
             Projections.computed("jobsCompleted",
@@ -153,7 +154,12 @@ public class FreelancerRepository {
         freelancerDetails.setLastName(lastName);
 
         Decimal128 ratingDecimal = document.get("averageRating", Decimal128.class);
-        BigDecimal rating = ratingDecimal.bigDecimalValue();
+        BigDecimal rating = null;
+
+        if (ratingDecimal != null) {
+            rating = ratingDecimal.bigDecimalValue().setScale(2, RoundingMode.HALF_UP);
+        }
+        
         freelancerDetails.setRating(rating);
 
         long phoneNumber = document.getLong("phoneNumber");
@@ -189,7 +195,4 @@ public class FreelancerRepository {
                 .city(document.getString("city"))
                 .build();
     }
-
-
-
 }

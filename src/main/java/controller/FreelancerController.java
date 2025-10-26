@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import dto.FreelancerDetailsDto;
+import dto.FreelancerRatingLeaderboardDto;
 import service.FreelancerService;
 
 @RestController
@@ -31,13 +32,18 @@ public class FreelancerController {
     }
     
     @GetMapping("/leaderboard")
-    public ResponseEntity<List<FreelancerDetailsDto>> getLeaderboard(
+    public ResponseEntity<List<?>> getLeaderboard(
         @RequestParam(defaultValue = "averageRating") String sortBy,
         @RequestParam(defaultValue = "10") int limit,
         @RequestParam(defaultValue = "0") int skip
     ) {
-        List<FreelancerDetailsDto> leaderboard = freelancerService.getLeaderboard(sortBy, limit, skip);
-        return ResponseEntity.ok(leaderboard);
+        if (sortBy.contains("jobsCompleted")) {
+
+        }
+
+        // default to average rating leaderboard
+        List<FreelancerRatingLeaderboardDto> leaderboadDetails = freelancerService.getRatingLeaderboard(limit, skip);
+        return ResponseEntity.ok(leaderboadDetails);
     }
 
 }

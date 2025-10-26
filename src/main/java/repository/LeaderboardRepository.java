@@ -1,14 +1,11 @@
 package repository;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.types.Decimal128;
 import org.springframework.stereotype.Repository;
 
 import com.mongodb.client.MongoCollection;
@@ -18,6 +15,7 @@ import com.mongodb.client.model.Sorts;
 
 import config.MongoDbContext;
 import dto.LeaderboardDetailsDto;
+import util.mappers.LeaderboardDetailsMapper;
 
 @Repository
 public class LeaderboardRepository {
@@ -56,34 +54,7 @@ public class LeaderboardRepository {
         return collection.aggregate(pipeline)
             .into(new ArrayList<>())
             .stream()
-            .map(this::convertDocumentToRatingLeaderboardDto)
+            .map(LeaderboardDetailsMapper::toLeaderboardDetails)
             .toList();
-    }
-
-    private LeaderboardDetailsDto convertDocumentToRatingLeaderboardDto(Document document) {
-        LeaderboardDetailsDto dto = new LeaderboardDetailsDto();
-
-        String id = document.getString("_id");
-        dto.setId(id);
-
-        String firstName = document.getString("firstName");
-        dto.setFirstName(firstName);
-
-        String lastName = document.getString("lastName");
-        dto.setLastName(lastName);
-
-        Decimal128 ratingDecimal = document.get("averageRating", Decimal128.class);
-        BigDecimal rating = null;
-
-        if (ratingDecimal != null) {
-            rating = ratingDecimal.bigDecimalValue().setScale(2, RoundingMode.HALF_UP);
-        }
-        
-        dto.setRating(rating);
-
-        int reviewNum = document.getInteger("reviewNum");
-        dto.setReviewNum(reviewNum);
-
-        return dto;
     }
 }

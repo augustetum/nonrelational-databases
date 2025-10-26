@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import entity.Review;
 import entity.ReviewId;
 import util.DateConverter;
-import util.ReviewMapper;
+import util.mappers.ReviewMapper;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;

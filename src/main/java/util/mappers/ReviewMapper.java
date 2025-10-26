@@ -1,10 +1,11 @@
-package util;
+package util.mappers;
 
 import org.bson.Document;
 import org.bson.types.Decimal128;
 
 import entity.Review;
 import entity.ReviewId;
+import util.DateConverter;
 
 public class ReviewMapper {
     public static Document toDocument(Review review) {

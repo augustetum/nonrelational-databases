@@ -70,13 +70,14 @@ public class LeaderboardCacheRepository extends CacheRepository {
         String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
         Map<String, String> updatedFields;
 
+        jedisConn.watch(leaderboardKey, entryDetailsKey); // TODO: resolve
+        
         if (!jedisConn.exists(leaderboardKey)) {
             return;
         }
 
         LeaderboardDetailsDto detailsDto = getEntryDetails(freelancerId, jedisConn);
 
-        jedisConn.watch(leaderboardKey, entryDetailsKey); // TODO: resolve
         Transaction transaction = jedisConn.multi();
         try {
             // re-calculate rating

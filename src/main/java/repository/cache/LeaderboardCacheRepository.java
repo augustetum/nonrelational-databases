@@ -59,9 +59,9 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return leaderboardDetails;
     }
 
-    private LeaderboardDetailsDto getEntryDetails(String freelancerId, Transaction transaction) {
+    private LeaderboardDetailsDto getEntryDetails(String freelancerId, Jedis jedisConn) {
         String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-        Map<String, String> entryDetails = transaction.hgetAll(entryKey).get();
+        Map<String, String> entryDetails = jedisConn.hgetAll(entryKey);
         return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
     }
 
@@ -70,16 +70,16 @@ public class LeaderboardCacheRepository extends CacheRepository {
         String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
         Map<String, String> updatedFields;
 
-        jedisConn.watch(leaderboardKey); // TODO: resolve
+        if (!jedisConn.exists(leaderboardKey)) {
+            return;
+        }
+
+        LeaderboardDetailsDto detailsDto = getEntryDetails(freelancerId, jedisConn);
+
+        jedisConn.watch(leaderboardKey, entryDetailsKey); // TODO: resolve
         Transaction transaction = jedisConn.multi();
         try {
-            if (!transaction.exists(leaderboardKey).get()) {
-                return;
-            }
-
             // re-calculate rating
-            LeaderboardDetailsDto detailsDto = getEntryDetails(freelancerId, transaction);
-
             BigDecimal oldAvgRating = detailsDto.getRating();
             int oldReviewNum = detailsDto.getReviewNum();
             int newReviewNum = oldReviewNum + reviewNumChange;

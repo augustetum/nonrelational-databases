@@ -40,7 +40,7 @@ public class LeaderboardDetailsMapper {
         if (ratingStr != null) {
             double ratingDouble = Double.parseDouble(ratingStr);
             if (ratingDouble != -1) {
-                rating = BigDecimal.valueOf(ratingDouble);
+                rating = BigDecimal.valueOf(ratingDouble).setScale(2, RoundingMode.HALF_UP);
             }
         }
         dto.setRating(rating);

@@ -114,7 +114,6 @@ public class LeaderboardCacheRepository extends CacheRepository {
         String leaderboardKey = buildLeaderboardKey();
         Map<String, Double> leaderboard = new HashMap<>();
 
-        jedisConn.watch(leaderboardKey);
         Transaction transaction = jedisConn.multi();
         try {
             for (LeaderboardDetailsDto detailsDto : leaderboardDetails) {
@@ -130,7 +129,11 @@ public class LeaderboardCacheRepository extends CacheRepository {
             }
 
             transaction.zadd(leaderboardKey, leaderboard);
-            transaction.exec();
+            
+            List<Object> results = transaction.exec();
+            if (results == null) {
+                throw new IllegalStateException("Concurrent modification detected while updating leaderboard");
+            }
         }
         catch (Exception ex) {
             transaction.discard();

@@ -115,7 +115,47 @@ public class LeaderboardCacheRepository extends CacheRepository {
     public void updateEntryDetails(Review review, Jedis jedisConn) {
         String freelancerId = review.getId().revieweeId();
         String leaderboardKey = buildLeaderboardKey("averageRating");
-        String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+
+        jedisConn.watch(leaderboardKey); // TODO: resolve
+        Transaction transaction = jedisConn.multi();
+        try {
+            if (!jedisConn.exists(leaderboardKey)) {
+                return;
+            }
+
+            LeaderboardDetailsDto detailsDto = getEntryDetails(leaderboardKey, transaction);
+
+            // convert fields to double
+            BigDecimal reviewRating = review.getRating();
+            BigDecimal avgRating = detailsDto.getRating();
+
+            if (avgRating == null) {
+                avgRating = BigDecimal.ZERO;
+            }
+
+            double reviewRatingDouble = reviewRating.doubleValue();
+            double avgRatingDouble = avgRating.doubleValue();
+            int reviewNum = detailsDto.getReviewNum();
+            
+            // re-calculate rating
+            int updatedReviewNum = reviewNum + 1;
+            double updatedAvgRating = (avgRatingDouble * reviewNum + reviewRatingDouble) / updatedReviewNum;
+            
+            // update leaderboard
+            avgRating = BigDecimal.valueOf(updatedAvgRating);
+            updateEntry(freelancerId, avgRating, updatedReviewNum, transaction);
+
+            transaction.exec();
+        }
+        catch (Exception ex) {
+            transaction.discard();
+            throw ex;
+        }
+    }
+
+    public void updateEntryDetails(Review oldReview, Review newReview, Jedis jedisConn) {
+        String freelancerId = review.getId().revieweeId();
+        String leaderboardKey = buildLeaderboardKey("averageRating");
         Map<String, String> updatedFields;
 
         jedisConn.watch(leaderboardKey); // TODO: resolve
@@ -163,6 +203,23 @@ public class LeaderboardCacheRepository extends CacheRepository {
             transaction.discard();
             throw ex;
         }
+    }
+
+    private void updateEntry(String freelancerId, BigDecimal avgRating, int reviewNum, Transaction transaction) {
+        // update leaderboard entry details
+        String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        
+        Map<String, String> updatedFields = Map.of(
+            "rating", avgRating.toString(),
+            "reviewNum", String.valueOf(reviewNum)
+        );
+
+        transaction.hset(entryDetailsKey, updatedFields);
+
+        // update leaderboard
+        String leaderboardKey = buildLeaderboardKey("averageRating");
+        double compositeScore = calculateCompositeScore(avgRating, reviewNum);
+        transaction.zadd(leaderboardKey, compositeScore, freelancerId);
     }
 
     public void updateAverageRatingLeaderboard(String freelancerId, BigDecimal avgRating, int reviewNum, Jedis jedisConn) {

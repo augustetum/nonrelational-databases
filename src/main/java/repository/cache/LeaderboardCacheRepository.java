@@ -91,14 +91,6 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return leaderboardDetails;
     }
 
-    // public List<FreelancerJobsCompletedLeaderboardDto> getJobsCompletedLeaderboard(int limit, int skip, Jedis jedisConn) {
-    //     String leaderboardKey = buildLeaderboardKey("averageRating");
-        
-    //     // Pipeline pipeline = jedisConn.pipelined();
-
-    //     // TODO: 
-    // }
-
     public void setAverageRatingLeaderboard(List<FreelancerRatingLeaderboardDto> leaderboardDetails, Jedis jedisConn) {
         Map<String, Double> ratings = new HashMap<>();
         

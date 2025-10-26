@@ -75,7 +75,7 @@ public class ReviewService {
                     cachedDto.setRating(updatedAvgRatingBigDecimal);
                     cachedDto.setReviewNum(updatedReviewNum);
 
-                    leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
+                    leaderboardCacheRepository.updateAverageRatingLeaderboard(reviewId.revieweeId(), updatedAvgRatingBigDecimal, reviewNum, jedisConn);
                 }
             }
 
@@ -124,9 +124,8 @@ public class ReviewService {
                     double updatedAvgRating = (avgRating * reviewNum - oldReviewRating + reviewRating) / reviewNum;
 
                     BigDecimal updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
-                    cachedDto.setRating(updatedAvgRatingBigDecimal);
 
-                    leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
+                    leaderboardCacheRepository.updateAverageRatingLeaderboard(reviewId.revieweeId(), updatedAvgRatingBigDecimal, reviewNum, jedisConn);
                 }
             }
 
@@ -183,7 +182,7 @@ public class ReviewService {
                     cachedDto.setRating(updatedAvgRatingBigDecimal);
                     cachedDto.setReviewNum(updatedReviewNum);
                     
-                    leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
+                    leaderboardCacheRepository.updateAverageRatingLeaderboard(id.revieweeId(), updatedAvgRatingBigDecimal, reviewNum, jedisConn);
                 }
             }
 

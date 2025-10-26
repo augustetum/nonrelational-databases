@@ -98,20 +98,17 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return jedisConn.exists(leaderboardKey);
     }
 
-    public void updateAverageRatingLeaderboard(FreelancerRatingLeaderboardDto dto, Jedis jedisConn) {
+    public void updateAverageRatingLeaderboard(String freelancerId, BigDecimal avgRating, int reviewNum, Jedis jedisConn) {
         // TODO: add transaction?
 
         // update leaderboard entry
-        String entryKey = buildLeaderboardEntryKey("averageRating", dto.getId());
-        Map<String, String> hash = buildLeaderboardEntryHashMap(dto);
-
-        // TODO: update partially
-        jedisConn.hset(entryKey, hash);
+        String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        jedisConn.hset(entryKey, "rating", String.valueOf(avgRating));
+        jedisConn.hset(entryKey, "reviewNum", String.valueOf(reviewNum));
 
         // update leaderboard
         String leaderboardKey = buildLeaderboardKey("averageRating");
-        String freelancerId = dto.getId();
-        double compositeScore = calculateCompositeScore(dto);
+        double compositeScore = calculateCompositeScore(avgRating, reviewNum);
         
         jedisConn.zadd(leaderboardKey, compositeScore, freelancerId);
     }
@@ -178,16 +175,16 @@ public class LeaderboardCacheRepository extends CacheRepository {
     }
 
     private double calculateCompositeScore(FreelancerRatingLeaderboardDto dto) {
-        BigDecimal ratingBigDecimal = dto.getRating();
+        return calculateCompositeScore(dto.getRating(), dto.getReviewNum());
+    }
+
+    private double calculateCompositeScore(BigDecimal ratingBigDecimal, int reviewNum) {
         double rating = -1;
 
         if (ratingBigDecimal != null) {
             rating = ratingBigDecimal.doubleValue();
         }
 
-        int reviewNum = dto.getReviewNum();
-        double compositeScore = rating * 100 + reviewNum;
-
-        return compositeScore;
+        return rating * 100 + reviewNum;
     }
 }

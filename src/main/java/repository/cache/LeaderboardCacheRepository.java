@@ -15,6 +15,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.Response;
+import redis.clients.jedis.Transaction;
 import redis.clients.jedis.resps.Tuple;
 
 @Repository
@@ -99,18 +100,25 @@ public class LeaderboardCacheRepository extends CacheRepository {
     }
 
     public void updateAverageRatingLeaderboard(String freelancerId, BigDecimal avgRating, int reviewNum, Jedis jedisConn) {
-        // TODO: add transaction?
-
-        // update leaderboard entry
         String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-        jedisConn.hset(entryKey, "rating", String.valueOf(avgRating));
-        jedisConn.hset(entryKey, "reviewNum", String.valueOf(reviewNum));
-
-        // update leaderboard
         String leaderboardKey = buildLeaderboardKey("averageRating");
-        double compositeScore = calculateCompositeScore(avgRating, reviewNum);
         
-        jedisConn.zadd(leaderboardKey, compositeScore, freelancerId);
+        Map<String, String> entryFields = new HashMap<>();
+        entryFields.put("rating", String.valueOf(avgRating));
+        entryFields.put("reviewNum", String.valueOf(reviewNum));
+
+        double compositeScore = calculateCompositeScore(avgRating, reviewNum);
+
+        // apply changes
+        Transaction transaction = jedisConn.multi();
+        try {
+            transaction.hset(entryKey, entryFields);
+            transaction.zadd(leaderboardKey, compositeScore, freelancerId);
+        }
+        catch (Exception ex){
+            transaction.discard();
+            throw ex;
+        }       
     }
 
     private String buildLeaderboardKey(String sortBy) {

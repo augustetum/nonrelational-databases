@@ -42,49 +42,13 @@ public class ReviewService {
 
     public void addReview(Review review, boolean isClient) {
         if (isClient) {
-            // check if leaderboard is existant in cache
-            //      yes -> update cache
-            //      no -> ignore cache
-            //
-            // update db
-
-
-
             // update cache
-            ReviewId reviewId = review.getId();
+            String freelancerId = review.getId().revieweeId();
+
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
                 // invalidate freelancer details
-                freelancerCacheRepository.invalidateFreelancer(reviewId.revieweeId(), jedisConn);
-                
-                // change leaderboard
-                // TODO: add transaction?
-                if (leaderboardCacheRepository.leaderboardExists(jedisConn))
-                {
-                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getEntryDetails(reviewId.revieweeId(), jedisConn);
-                    
-                    // re-calculate average rating
-                    BigDecimal reviewRatingBigDecimal = review.getRating();
-                    BigDecimal avgRatingBigDecimal = cachedDto.getRating();
-                    
-                    if (avgRatingBigDecimal == null) {
-                        avgRatingBigDecimal = BigDecimal.ZERO;
-                    }
-
-                    int reviewNum = cachedDto.getReviewNum();
-
-                    double reviewRating = reviewRatingBigDecimal.doubleValue();
-                    double avgRating = avgRatingBigDecimal.doubleValue();
-
-                    int updatedReviewNum = reviewNum + 1;
-                    double updatedAvgRating = (avgRating * reviewNum + reviewRating) / updatedReviewNum;
-
-                    BigDecimal updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
-
-                    cachedDto.setRating(updatedAvgRatingBigDecimal);
-                    cachedDto.setReviewNum(updatedReviewNum);
-
-                    leaderboardCacheRepository.updateAverageRatingLeaderboard(reviewId.revieweeId(), updatedAvgRatingBigDecimal, reviewNum, jedisConn);
-                }
+                freelancerCacheRepository.invalidateFreelancer(freelancerId, jedisConn);
+                leaderboardCacheRepository.updateEntryDetails(review, jedisConn);
             }
 
             // db changes

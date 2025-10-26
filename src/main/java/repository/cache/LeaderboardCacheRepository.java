@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import dto.LeaderboardDetailsDto;
+import entity.Review;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
@@ -72,6 +73,12 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
     }
 
+    public LeaderboardDetailsDto getEntryDetails(String freelancerId, Transaction transaction) {
+        String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        Map<String, String> entryDetails = transaction.hgetAll(entryKey).get();
+        return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
+    }
+
     public void setLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
         String leaderboardKey = buildLeaderboardKey("averageRating");
         Map<String, Double> leaderboard = new HashMap<>();
@@ -103,6 +110,59 @@ public class LeaderboardCacheRepository extends CacheRepository {
     public boolean leaderboardExists(Jedis jedisConn) {
         String leaderboardKey = buildLeaderboardKey("averageRating");
         return jedisConn.exists(leaderboardKey);
+    }
+
+    public void updateEntryDetails(Review review, Jedis jedisConn) {
+        String freelancerId = review.getId().revieweeId();
+        String leaderboardKey = buildLeaderboardKey("averageRating");
+        String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        Map<String, String> updatedFields;
+
+        jedisConn.watch(leaderboardKey); // TODO: resolve
+        Transaction transaction = jedisConn.multi();
+        try {
+            if (!jedisConn.exists(leaderboardKey)) {
+                return;
+            }
+
+            LeaderboardDetailsDto detailsDto = getEntryDetails(leaderboardKey, transaction);
+
+            // convert fields to double
+            BigDecimal reviewRating = review.getRating();
+            BigDecimal avgRating = detailsDto.getRating();
+
+            if (avgRating == null) {
+                avgRating = BigDecimal.ZERO;
+            }
+
+            double reviewRatingDouble = reviewRating.doubleValue();
+            double avgRatingDouble = avgRating.doubleValue();
+            int reviewNum = detailsDto.getReviewNum();
+            
+            // re-calculate rating
+            int updatedReviewNum = reviewNum + 1;
+            double updatedAvgRating = (avgRatingDouble * reviewNum + reviewRatingDouble) / updatedReviewNum;
+            
+            // update leaderboard entry details
+            avgRating = BigDecimal.valueOf(updatedAvgRating);
+
+            updatedFields = Map.of(
+                "rating", avgRating.toString(),
+                "reviewNum", String.valueOf(reviewNum)
+            );
+
+            transaction.hset(entryDetailsKey, updatedFields);
+
+            // re-calculate new composite score
+            double compositeScore = calculateCompositeScore(avgRating, updatedReviewNum);
+            transaction.zadd(leaderboardKey, compositeScore, freelancerId);
+
+            transaction.exec();
+        }
+        catch (Exception ex) {
+            transaction.discard();
+            throw ex;
+        }
     }
 
     public void updateAverageRatingLeaderboard(String freelancerId, BigDecimal avgRating, int reviewNum, Jedis jedisConn) {

@@ -105,6 +105,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         String entryKey = buildLeaderboardEntryKey("averageRating", dto.getId());
         Map<String, String> hash = buildLeaderboardEntryHashMap(dto);
 
+        // TODO: update partially
         jedisConn.hset(entryKey, hash);
 
         // update leaderboard

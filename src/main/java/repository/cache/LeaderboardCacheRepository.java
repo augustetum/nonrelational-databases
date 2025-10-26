@@ -114,6 +114,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         try {
             transaction.hset(entryKey, entryFields);
             transaction.zadd(leaderboardKey, compositeScore, freelancerId);
+            transaction.exec();
         }
         catch (Exception ex){
             transaction.discard();

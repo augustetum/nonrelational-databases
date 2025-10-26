@@ -67,37 +67,13 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return leaderboardDetails;
     }
 
-    public LeaderboardDetailsDto getEntryDetails(String freelancerId, Transaction transaction) {
+    private LeaderboardDetailsDto getEntryDetails(String freelancerId, Transaction transaction) {
         String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
         Map<String, String> entryDetails = transaction.hgetAll(entryKey).get();
         return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
     }
 
-    public void updateEntryDetailsOnAdd(Review review, Jedis jedisConn) {
-        String freelancerId = review.getId().revieweeId();
-        BigDecimal oldRating = BigDecimal.ZERO;
-        BigDecimal newRating = review.getRating();
-        
-        updateEntryDetails(freelancerId, oldRating, newRating, 1, jedisConn);
-    }
-
-    public void updateEntryDetailsOnEdit(Review oldReview, Review newReview, Jedis jedisConn) {
-        String freelancerId = oldReview.getId().revieweeId();
-        BigDecimal oldRating = oldReview.getRating();
-        BigDecimal newRating = newReview.getRating();
-
-        updateEntryDetails(freelancerId, oldRating, newRating, 0, jedisConn);
-    }
-
-    public void updateEntryDetailsOnRemove(Review oldReview, Jedis jedisConn) {
-        String freelancerId = oldReview.getId().revieweeId();
-        BigDecimal oldRating = oldReview.getRating();
-        BigDecimal newRating = BigDecimal.ZERO;
-
-        updateEntryDetails(freelancerId, oldRating, newRating, -1, jedisConn);
-    }
-
-    private void updateEntryDetails(String freelancerId, BigDecimal oldRating, BigDecimal newRating, int reviewNumChange, Jedis jedisConn) {
+    public void updateEntryDetails(String freelancerId, BigDecimal oldRating, BigDecimal newRating, int reviewNumChange, Jedis jedisConn) {
         String leaderboardKey = buildLeaderboardKey("averageRating");
         String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
         Map<String, String> updatedFields;

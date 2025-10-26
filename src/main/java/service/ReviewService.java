@@ -1,5 +1,6 @@
 package service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -41,10 +42,13 @@ public class ReviewService {
         if (isClient) {
             // update cache
             String freelancerId = review.getId().revieweeId();
+            
+            BigDecimal oldRating = BigDecimal.ZERO;
+            BigDecimal newRating = review.getRating();
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
                 freelancerCacheRepository.invalidateFreelancer(freelancerId, jedisConn);
-                leaderboardCacheRepository.updateEntryDetailsOnAdd(review, jedisConn);
+                leaderboardCacheRepository.updateEntryDetails(freelancerId, oldRating, newRating, 1, jedisConn);
             }
 
             // db changes
@@ -60,11 +64,14 @@ public class ReviewService {
             // update cache
             String freelancerId = review.getId().revieweeId();
             String reviewId = review.getId().reviewId();
+
             Review oldReview = freelancerReviewRepository.getByReviewId(freelancerId, reviewId);
+            BigDecimal oldRating = oldReview.getRating();
+            BigDecimal newRating = review.getRating();
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
                 freelancerCacheRepository.invalidateFreelancer(review.getId().revieweeId(), jedisConn);
-                leaderboardCacheRepository.updateEntryDetailsOnEdit(oldReview, review, jedisConn);
+                leaderboardCacheRepository.updateEntryDetails(freelancerId, oldRating, newRating, 0, jedisConn);
             }
 
             // db changes
@@ -78,11 +85,16 @@ public class ReviewService {
     public void removeReview(ReviewId id, boolean isClient) {
         if (isClient) {
             // update cache
-            Review oldReview = freelancerReviewRepository.getByReviewId(id.revieweeId(), id.reviewId());
+            String freelancerId = id.revieweeId();
+            String reviewId = id.reviewId();
+
+            Review oldReview = freelancerReviewRepository.getByReviewId(freelancerId, reviewId);
+            BigDecimal oldRating = oldReview.getRating();
+            BigDecimal newRating = BigDecimal.ZERO;
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
                 freelancerCacheRepository.invalidateFreelancer(id.revieweeId(), jedisConn);
-                leaderboardCacheRepository.updateEntryDetailsOnRemove(oldReview, jedisConn);
+                leaderboardCacheRepository.updateEntryDetails(freelancerId, oldRating, newRating, -1, jedisConn);
             }
 
             // db changes

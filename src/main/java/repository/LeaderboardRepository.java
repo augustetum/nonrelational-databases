@@ -27,7 +27,7 @@ public class LeaderboardRepository {
         this.collection = dbContext.freelancers;
     }
 
-    public List<FreelancerRatingLeaderboardDto> getRatingLeaderboard(int limit, int skip) {
+    public List<FreelancerRatingLeaderboardDto> getRatingLeaderboard() {
         List<Bson> pipeline = new ArrayList<>();
 
         // project fields with calculated metrics
@@ -48,7 +48,10 @@ public class LeaderboardRepository {
         )));
 
         // sort entries
-        pipeline.add(Aggregates.sort(Sorts.descending("averageRating")));
+        pipeline.add(Aggregates.sort(Sorts.orderBy(
+            Sorts.descending("averageRating"),
+            Sorts.descending("reviewNum")
+        )));
 
         return collection.aggregate(pipeline)
             .into(new ArrayList<>())

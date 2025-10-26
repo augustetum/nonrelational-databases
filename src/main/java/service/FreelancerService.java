@@ -74,12 +74,17 @@ public class FreelancerService {
         }
 
         // cache miss logic
-        // TODO: add pagination
-        leaderboardDetails = leaderboardRepository.getRatingLeaderboard(limit, skip);
+        leaderboardDetails = leaderboardRepository.getRatingLeaderboard();
 
         try (Jedis jedisConn = leaderboardCacheRepository.getJedisConnection()) {
             leaderboardCacheRepository.setAverageRatingLeaderboard(leaderboardDetails, jedisConn);
         }
+
+        // return only requested items
+        leaderboardDetails = leaderboardDetails.stream()
+            .skip(skip)
+            .limit(limit)
+            .collect(Collectors.toList());
         
         return leaderboardDetails;
     }

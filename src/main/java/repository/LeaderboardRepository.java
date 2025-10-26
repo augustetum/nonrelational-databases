@@ -1,14 +1,11 @@
 package repository;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.types.Decimal128;
 import org.springframework.stereotype.Repository;
 
 import com.mongodb.client.MongoCollection;
@@ -17,7 +14,8 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 
 import config.MongoDbContext;
-import dto.FreelancerRatingLeaderboardDto;
+import dto.LeaderboardDetailsDto;
+import util.mappers.LeaderboardDetailsMapper;
 
 @Repository
 public class LeaderboardRepository {
@@ -27,7 +25,7 @@ public class LeaderboardRepository {
         this.collection = dbContext.freelancers;
     }
 
-    public List<FreelancerRatingLeaderboardDto> getRatingLeaderboard() {
+    public List<LeaderboardDetailsDto> getRatingLeaderboard() {
         List<Bson> pipeline = new ArrayList<>();
 
         // project fields with calculated metrics
@@ -56,34 +54,7 @@ public class LeaderboardRepository {
         return collection.aggregate(pipeline)
             .into(new ArrayList<>())
             .stream()
-            .map(this::convertDocumentToRatingLeaderboardDto)
+            .map(LeaderboardDetailsMapper::toLeaderboardDetails)
             .toList();
-    }
-
-    private FreelancerRatingLeaderboardDto convertDocumentToRatingLeaderboardDto(Document document) {
-        FreelancerRatingLeaderboardDto dto = new FreelancerRatingLeaderboardDto();
-
-        String id = document.getString("_id");
-        dto.setId(id);
-
-        String firstName = document.getString("firstName");
-        dto.setFirstName(firstName);
-
-        String lastName = document.getString("lastName");
-        dto.setLastName(lastName);
-
-        Decimal128 ratingDecimal = document.get("averageRating", Decimal128.class);
-        BigDecimal rating = null;
-
-        if (ratingDecimal != null) {
-            rating = ratingDecimal.bigDecimalValue().setScale(2, RoundingMode.HALF_UP);
-        }
-        
-        dto.setRating(rating);
-
-        int reviewNum = document.getInteger("reviewNum");
-        dto.setReviewNum(reviewNum);
-
-        return dto;
     }
 }

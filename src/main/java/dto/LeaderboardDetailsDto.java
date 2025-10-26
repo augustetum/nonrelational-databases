@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 @Data
-public class FreelancerRatingLeaderboardDto {
+public class LeaderboardDetailsDto {
     private String id;
     private String firstName;
     private String lastName;

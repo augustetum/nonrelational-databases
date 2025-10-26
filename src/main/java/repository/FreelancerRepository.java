@@ -17,7 +17,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
 import config.MongoDbContext;
 import dto.FreelancerDetailsDto;
 import util.IdentifierGenerator;
@@ -77,46 +76,6 @@ public class FreelancerRepository {
         FreelancerDetailsDto freelancerDetails = convertDocumentToFreelancerDetails(document);
 
         return Optional.of(freelancerDetails);
-    }
-
-    public List<FreelancerDetailsDto> getLeaderboard(String sortBy, int limit, int skip) {
-        List<Bson> pipeline = new ArrayList<>();
-
-        // Lookup bookings for each freelancer
-        pipeline.add(Aggregates.lookup("bookings", "_id", "freelancerId", "completedBookings"));
-
-        // Project fields with calculated metrics
-        pipeline.add(Aggregates.project(Projections.fields(
-            Projections.computed("averageRating",
-                new Document("$ifNull", Arrays.asList(
-                    new Document("$avg", "$reviews.rating"),
-                    null
-                ))
-            ),
-            Projections.computed("jobsCompleted",
-                new Document("$size",
-                    new Document("$filter", new Document()
-                        .append("input", "$completedBookings")
-                        .append("as", "booking")
-                        .append("cond", new Document("$eq", Arrays.asList("$$booking.status", "COMPLETED")))
-                    )
-                )
-            ),
-            Projections.include("firstName", "lastName", "city", "phoneNumber")
-        )));
-
-        // Sort by specified field (rating or jobsCompleted)
-        pipeline.add(Aggregates.sort(Sorts.descending(sortBy)));
-
-        // Pagination
-        pipeline.add(Aggregates.skip(skip));
-        pipeline.add(Aggregates.limit(limit));
-
-        return collection.aggregate(pipeline)
-            .into(new ArrayList<>())
-            .stream()
-            .map(this::convertDocumentToFreelancerDetails)
-            .toList();
     }
 
     public void add(Freelancer freelancer) {

@@ -40,15 +40,15 @@ public class ReviewPermissionService {
             return PermissionCheckResultDto.invalid("User with specified id does not exist.");
         }
 
-        Optional<Review> maybeReview; 
+        Review review;
         if (isClient) {
-            maybeReview = freelancerReviewRepository.getByAuthorId(revieweeId, requestorId);
+            review = freelancerReviewRepository.getByAuthorId(revieweeId, requestorId);
         }
         else {
-            maybeReview = clientReviewRepository.getByAuthorId(revieweeId, requestorId);
+            review = clientReviewRepository.getByAuthorId(revieweeId, requestorId);
         }
 
-        if (maybeReview.isPresent()) {
+        if (review != null) {
             return PermissionCheckResultDto.invalid("Users are not allowed to write reviews to the same person more than once.");
         }
 
@@ -60,19 +60,18 @@ public class ReviewPermissionService {
             return PermissionCheckResultDto.invalid("User with specified id does not exist.");
         }
         
-        Optional<Review> maybeReview;
+        Review review;
         if(isClient) {
-            maybeReview = freelancerReviewRepository.getByReviewId(revieweeId, reviewId);
+            review = freelancerReviewRepository.getByReviewId(revieweeId, reviewId);
         }
         else {
-            maybeReview = clientReviewRepository.getByReviewId(revieweeId, reviewId);
+            review = clientReviewRepository.getByReviewId(revieweeId, reviewId);
         }
 
-        if (!maybeReview.isPresent()) {
+        if (review == null) {
             return PermissionCheckResultDto.invalid("Review with specified id does not exist.");
         }
 
-        Review review = maybeReview.get();
         if (!requestorId.equals(review.getAuthorId())) {
             return PermissionCheckResultDto.invalid("Users are not allowed to edit reviews written by other users.");
         }
@@ -85,19 +84,18 @@ public class ReviewPermissionService {
             return PermissionCheckResultDto.invalid("User with specified id does not exist.");
         }
         
-        Optional<Review> maybeReview;
+        Review review;
         if(isClient) {
-            maybeReview = freelancerReviewRepository.getByReviewId(revieweeId, reviewId);
+            review = freelancerReviewRepository.getByReviewId(revieweeId, reviewId);
         }
         else {
-            maybeReview = clientReviewRepository.getByReviewId(revieweeId, reviewId);
+            review = clientReviewRepository.getByReviewId(revieweeId, reviewId);
         }
 
-        if (!maybeReview.isPresent()) {
+        if (review == null) {
             return PermissionCheckResultDto.invalid("Review with specified id does not exist.");
         }
 
-        Review review = maybeReview.get();
         if (!requestorId.equals(review.getAuthorId())) {
             return PermissionCheckResultDto.invalid("Users are not allowed to delete reviews written by other users.");
         }

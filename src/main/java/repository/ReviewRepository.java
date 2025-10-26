@@ -1,19 +1,16 @@
 package repository;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.types.Decimal128;
 import org.springframework.stereotype.Repository;
 import entity.Review;
 import entity.ReviewId;
 import util.DateConverter;
+import util.ReviewMapper;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Aggregates;
@@ -30,7 +27,7 @@ public abstract class ReviewRepository {
         this.collection = collection;
     }
 
-    public Optional<Review> getByReviewId(String revieweeId, String reviewId) {
+    public Review getByReviewId(String revieweeId, String reviewId) {
         List<Bson> pipeline = Arrays.asList(
             Aggregates.match(Filters.eq("_id", revieweeId)),
             Aggregates.unwind("$reviews"),
@@ -38,18 +35,16 @@ public abstract class ReviewRepository {
             Aggregates.replaceRoot("$reviews")
         );
 
-        List<Document> documents = collection.aggregate(pipeline)
-            .into(new ArrayList<>());
+        List<Document> documents = collection.aggregate(pipeline).into(new ArrayList<>());
 
         if (documents.isEmpty()) {
-            return Optional.empty();
+            return null;
         }
 
-        Review review = convertDocumentToReview(revieweeId, documents.get(0));
-        return Optional.of(review);
+        return ReviewMapper.toReview(revieweeId, documents.get(0));
     }
 
-    public Optional<Review> getByAuthorId(String revieweeId, String authorId) {
+    public Review getByAuthorId(String revieweeId, String authorId) {
         List<Bson> pipeline = Arrays.asList(
             Aggregates.match(Filters.eq("_id", revieweeId)),
             Aggregates.unwind("$reviews"),
@@ -57,15 +52,13 @@ public abstract class ReviewRepository {
             Aggregates.replaceRoot("$reviews")
         );
 
-        List<Document> documents = collection.aggregate(pipeline)
-            .into(new ArrayList<>());
+        List<Document> documents = collection.aggregate(pipeline).into(new ArrayList<>());
 
         if (documents.isEmpty()) {
-            return Optional.empty();
+            return null;
         }
 
-        Review review = convertDocumentToReview(revieweeId, documents.get(0));
-        return Optional.of(review);
+        return ReviewMapper.toReview(revieweeId, documents.get(0));
     }
 
     public List<Review> getAll(String revieweeId) {
@@ -82,14 +75,14 @@ public abstract class ReviewRepository {
 
         List<Review> reviews = new ArrayList<>();
         collection.aggregate(pipeline)
-            .forEach(doc -> reviews.add(convertDocumentToReview(revieweeId, doc)));
+            .forEach(doc -> reviews.add(ReviewMapper.toReview(revieweeId, doc)));
 
         return reviews;
     }
 
     public void add(Review review) {
         review.setDate(LocalDate.now());
-        Document reviewDocument = convertReviewToDocument(review);
+        Document reviewDocument = ReviewMapper.toDocument(review);
         
         Bson filter = Filters.eq("_id", review.getId().revieweeId());
         Bson updates = Updates.push("reviews", reviewDocument);
@@ -119,45 +112,5 @@ public abstract class ReviewRepository {
         Bson userFilter = Filters.eq("_id", id.revieweeId());
 
         collection.updateOne(userFilter, updates);
-    }
-
-    protected Document convertReviewToDocument(Review review) {
-        Document document = new Document();
-        
-        document.append("_id", review.getId().reviewId());
-        
-        LocalDate localDate = review.getDate();
-        Date date = DateConverter.localDateToDate(localDate);
-        document.append("date", date);
-        
-        document.append("rating", review.getRating());
-        document.append("details", review.getDetails());
-        document.append("authorId", review.getAuthorId());
-
-        return document;
-    }
-
-    protected Review convertDocumentToReview(String revieweeId, Document document) {
-        Review review = new Review();
-
-        String reviewId = document.getString("_id");
-        ReviewId id = new ReviewId(revieweeId, reviewId);
-        review.setId(id);
-
-        Date date = document.getDate("date");
-        LocalDate localDate = DateConverter.dateToLocalDate(date);
-        review.setDate(localDate);
-
-        Decimal128 ratingDecimal = document.get("rating", Decimal128.class);
-        BigDecimal rating = ratingDecimal.bigDecimalValue();
-        review.setRating(rating);
-
-        String details = document.getString("details");
-        review.setDetails(details);
-
-        String authorId = document.getString("authorId");
-        review.setAuthorId(authorId);
-
-        return review;
     }
 }

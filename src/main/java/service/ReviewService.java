@@ -91,9 +91,7 @@ public class ReviewService {
         if (isClient) {
             // update cache
             ReviewId reviewId = review.getId();
-
-            Optional<Review> maybeReview = freelancerReviewRepository.getByReviewId(reviewId.revieweeId(), reviewId.reviewId());
-            Review oldReview = maybeReview.get();
+            Review oldReview = freelancerReviewRepository.getByReviewId(reviewId.revieweeId(), reviewId.reviewId());
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
                 // invalidate freelancer details
@@ -140,8 +138,7 @@ public class ReviewService {
     public void removeReview(ReviewId id, boolean isClient) {
         if (isClient) {
             // update cache
-            Optional<Review> maybeReview = freelancerReviewRepository.getByReviewId(id.revieweeId(), id.reviewId());
-            Review oldReview = maybeReview.get();
+            Review oldReview = freelancerReviewRepository.getByReviewId(id.revieweeId(), id.reviewId());
 
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {
                 freelancerCacheRepository.invalidateFreelancer(id.revieweeId(), jedisConn);

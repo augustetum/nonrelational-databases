@@ -1,7 +1,5 @@
 package repository.cache;
 
-import java.util.Set;
-
 import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +16,7 @@ public class FreelancerCacheRepository extends CacheRepository {
     }
 
     public FreelancerDetailsDto getFreelancerDetails(String id, Jedis jedisConn) {
-        String freelancerDataKey = String.format("freelancer:%s", id);
+        String freelancerDataKey =  buildFreelancerKey(id);
 
         try {
             String cachedData = jedisConn.get(freelancerDataKey);
@@ -37,7 +35,7 @@ public class FreelancerCacheRepository extends CacheRepository {
 
     public void setFreelancerDetails(FreelancerDetailsDto freelancerDetailsDto, Jedis jedisConn) {
         String id = freelancerDetailsDto.getId();
-        String freelancerDataKey = String.format("freelancer:%s", id);
+        String freelancerDataKey = buildFreelancerKey(id);
 
         try {
             String dtoJson = objectMapper.writeValueAsString(freelancerDetailsDto);
@@ -49,16 +47,11 @@ public class FreelancerCacheRepository extends CacheRepository {
     }
 
     public void invalidateFreelancer(String freelancerId, Jedis jedisConn) {
-        // TODO: add transaction?
-        String invalidationKey = String.format("invalidation:%s", freelancerId);
-        Set<String> leaderboardKeys = jedisConn.smembers(invalidationKey);
-        
-        for (String key : leaderboardKeys) {
-            jedisConn.del(key);
-        }
-        jedisConn.del(invalidationKey);
-
-        String freelancerKey = String.format("freelancer:%s", freelancerId);
+        String freelancerKey =  buildFreelancerKey(freelancerId);
         jedisConn.del(freelancerKey);
+    }
+
+    private String buildFreelancerKey(String id) {
+        return String.format("freelancer:%s", id);
     }
 }

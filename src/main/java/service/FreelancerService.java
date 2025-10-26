@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import dto.FreelancerDetailsDto;
-import dto.FreelancerRatingLeaderboardDto;
+import dto.LeaderboardDetailsDto;
 import redis.clients.jedis.Jedis;
 import repository.FreelancerRepository;
 import repository.LeaderboardRepository;
@@ -61,8 +61,8 @@ public class FreelancerService {
         }
     }
     
-    public List<FreelancerRatingLeaderboardDto> getRatingLeaderboard(int limit, int skip) {
-        List<FreelancerRatingLeaderboardDto> leaderboardDetails;
+    public List<LeaderboardDetailsDto> getRatingLeaderboard(int limit, int skip) {
+        List<LeaderboardDetailsDto> leaderboardDetails;
 
         // try to retrieve from cache
         try (Jedis jedisConn = leaderboardCacheRepository.getJedisConnection()) {

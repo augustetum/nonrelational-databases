@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import dto.FreelancerDetailsDto;
-import dto.FreelancerRatingLeaderboardDto;
+import dto.LeaderboardDetailsDto;
 import service.FreelancerService;
 
 @RestController
@@ -42,7 +42,7 @@ public class FreelancerController {
         }
 
         // default to average rating leaderboard
-        List<FreelancerRatingLeaderboardDto> leaderboadDetails = freelancerService.getRatingLeaderboard(limit, skip);
+        List<LeaderboardDetailsDto> leaderboadDetails = freelancerService.getRatingLeaderboard(limit, skip);
         return ResponseEntity.ok(leaderboadDetails);
     }
 

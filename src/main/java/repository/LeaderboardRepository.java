@@ -17,7 +17,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 
 import config.MongoDbContext;
-import dto.FreelancerRatingLeaderboardDto;
+import dto.LeaderboardDetailsDto;
 
 @Repository
 public class LeaderboardRepository {
@@ -27,7 +27,7 @@ public class LeaderboardRepository {
         this.collection = dbContext.freelancers;
     }
 
-    public List<FreelancerRatingLeaderboardDto> getRatingLeaderboard() {
+    public List<LeaderboardDetailsDto> getRatingLeaderboard() {
         List<Bson> pipeline = new ArrayList<>();
 
         // project fields with calculated metrics
@@ -60,8 +60,8 @@ public class LeaderboardRepository {
             .toList();
     }
 
-    private FreelancerRatingLeaderboardDto convertDocumentToRatingLeaderboardDto(Document document) {
-        FreelancerRatingLeaderboardDto dto = new FreelancerRatingLeaderboardDto();
+    private LeaderboardDetailsDto convertDocumentToRatingLeaderboardDto(Document document) {
+        LeaderboardDetailsDto dto = new LeaderboardDetailsDto();
 
         String id = document.getString("_id");
         dto.setId(id);

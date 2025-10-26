@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import dto.FreelancerRatingLeaderboardDto;
+import dto.LeaderboardDetailsDto;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
@@ -25,7 +25,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         super(jedisPool, objectMapper);
     }
 
-    public List<FreelancerRatingLeaderboardDto> getAverageRatingLeaderboard(int limit, int skip, Jedis jedisConn) {
+    public List<LeaderboardDetailsDto> getAverageRatingLeaderboard(int limit, int skip, Jedis jedisConn) {
         // check if leaderboard exists in cache
         String leaderboardKey = buildLeaderboardKey("averageRating");
         if (!jedisConn.exists(leaderboardKey)) {
@@ -50,7 +50,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         pipeline.sync();
 
         // combine data
-        List<FreelancerRatingLeaderboardDto> leaderboardDetails = new ArrayList<>();
+        List<LeaderboardDetailsDto> leaderboardDetails = new ArrayList<>();
 
         for (Tuple pair : leaderboard) {            
             String freelancerId = pair.getElement();
@@ -58,24 +58,24 @@ public class LeaderboardCacheRepository extends CacheRepository {
             Response<Map<String, String>> entryResponse = leaderboardEntries.get(freelancerId);
             Map<String, String> entry = entryResponse.get();
 
-            FreelancerRatingLeaderboardDto dto = buildLeaderboardDto(freelancerId, entry);
+            LeaderboardDetailsDto dto = buildLeaderboardDto(freelancerId, entry);
             leaderboardDetails.add(dto);
         }
 
         return leaderboardDetails;
     }
 
-    public FreelancerRatingLeaderboardDto getLeaderboardEntry(String freelancerId, Jedis jedisConn) {
+    public LeaderboardDetailsDto getLeaderboardEntry(String freelancerId, Jedis jedisConn) {
         String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
         Map<String, String> entry = jedisConn.hgetAll(entryKey);
 
         return buildLeaderboardDto(freelancerId, entry);
     }
 
-    public void setAverageRatingLeaderboard(List<FreelancerRatingLeaderboardDto> leaderboardDetails, Jedis jedisConn) {
+    public void setAverageRatingLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
         Map<String, Double> scores = new HashMap<>();
         
-        for (FreelancerRatingLeaderboardDto dto : leaderboardDetails) {    
+        for (LeaderboardDetailsDto dto : leaderboardDetails) {    
             // calculate composite score
             String freelancerId = dto.getId();
             double compositeScore = calculateCompositeScore(dto);
@@ -130,7 +130,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return String.format("leaderboard:%s:%s", sortBy, freelancerId);
     }
 
-    private Map<String, String> buildLeaderboardEntryHashMap(FreelancerRatingLeaderboardDto dto) {
+    private Map<String, String> buildLeaderboardEntryHashMap(LeaderboardDetailsDto dto) {
         Map<String, String> hash = new HashMap<>();
         
         // retrieve rating
@@ -150,8 +150,8 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return hash;
     }
 
-    private FreelancerRatingLeaderboardDto buildLeaderboardDto(String freelancerId, Map<String, String> entry) {
-        FreelancerRatingLeaderboardDto dto = new FreelancerRatingLeaderboardDto();
+    private LeaderboardDetailsDto buildLeaderboardDto(String freelancerId, Map<String, String> entry) {
+        LeaderboardDetailsDto dto = new LeaderboardDetailsDto();
         
         // set freelancer id
         dto.setId(freelancerId);
@@ -183,7 +183,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return dto;
     }
 
-    private double calculateCompositeScore(FreelancerRatingLeaderboardDto dto) {
+    private double calculateCompositeScore(LeaderboardDetailsDto dto) {
         return calculateCompositeScore(dto.getRating(), dto.getReviewNum());
     }
 

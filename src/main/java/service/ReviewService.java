@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import dto.FreelancerLeaderboardDetailsDto;
+import dto.LeaderboardDetailsDto;
 import entity.Review;
 import entity.ReviewId;
 import redis.clients.jedis.Jedis;
@@ -52,7 +52,7 @@ public class ReviewService {
                 // TODO: add transaction?
                 if (leaderboardCacheRepository.leaderboardExists(jedisConn))
                 {
-                    FreelancerLeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
+                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
                     
                     // re-calculate average rating
                     BigDecimal reviewRatingBigDecimal = review.getRating();
@@ -102,7 +102,7 @@ public class ReviewService {
 
                 if (leaderboardCacheRepository.leaderboardExists(jedisConn))
                 {
-                    FreelancerLeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
+                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
                     
                     // re-calculate average rating
                     BigDecimal reviewRatingBigDecimal = review.getRating();
@@ -147,7 +147,7 @@ public class ReviewService {
                 // TODO: add transaction?
                 if (leaderboardCacheRepository.leaderboardExists(jedisConn))
                 {
-                    FreelancerLeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(id.revieweeId(), jedisConn);
+                    LeaderboardDetailsDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(id.revieweeId(), jedisConn);
                     
                     // re-calculate average rating
                     BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();

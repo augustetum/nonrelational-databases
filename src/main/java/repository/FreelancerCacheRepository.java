@@ -1,6 +1,8 @@
 package repository;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Repository;
 
@@ -25,7 +27,7 @@ public class FreelancerCacheRepository {
     }
 
     public FreelancerDetailsDto getFreelancerDetails(String id, Jedis jedisConn) {
-        String freelancerDataKey = String.format("freelancers:%s", id);
+        String freelancerDataKey = String.format("freelancer:%s", id);
 
         try {
             String cachedData = jedisConn.get(freelancerDataKey);
@@ -44,11 +46,11 @@ public class FreelancerCacheRepository {
 
     public void setFreelancerDetails(FreelancerDetailsDto freelancerDetailsDto, Jedis jedisConn) {
         String id = freelancerDetailsDto.getId();
-        String freelancerDataKey = String.format("freelancers:%s", id);
+        String freelancerDataKey = String.format("freelancer:%s", id);
 
         try {
             String dtoJson = objectMapper.writeValueAsString(freelancerDetailsDto);
-            jedisConn.setex(freelancerDataKey, 30, dtoJson); // TODO: remove ttl
+            jedisConn.set(freelancerDataKey, dtoJson);
         }
         catch (Exception ex) {
             throw new RuntimeException("Putting object to cache was unsuccessful", ex);
@@ -63,8 +65,11 @@ public class FreelancerCacheRepository {
                 return null;
             }
             
-            List<String> cachedIds = jedisConn.lrange(leaderboardKey, 0, -1);
-            return cachedIds;
+            List<String> cachedIdsList = new ArrayList<>();
+            Set<String> cachedIdsSet = jedisConn.smembers(leaderboardKey);
+            cachedIdsList.addAll(cachedIdsSet);
+
+            return cachedIdsList;
         }
         catch (Exception ex) {
             throw new RuntimeException("Retrieving object from cache was unsuccessful", ex);
@@ -77,13 +82,35 @@ public class FreelancerCacheRepository {
         }
 
         String leaderboardKey = String.format("leaderboard:%s:%d:%d", sortBy, limit, skip);
-        try { 
-            jedisConn.del(leaderboardKey); // TODO: should it be deleted?
-            jedisConn.rpush(leaderboardKey, freelancerIds.toArray(new String[0]));
-            jedisConn.expire(leaderboardKey, 30); // TODO: remove after invalidation is in place
+
+        // add leaderboard entry
+        jedisConn.del(leaderboardKey); // TODO: should it be deleted?
+        jedisConn.sadd(leaderboardKey, freelancerIds.toArray(new String[0]));
+        jedisConn.expire(leaderboardKey, 120);
+
+        // add entries for invalidation
+        for (String id : freelancerIds) {
+            setLeaderboardInvalidation(id, leaderboardKey, jedisConn);
         }
-        catch (Exception ex) {
-            throw new RuntimeException("Putting object to cache was unsuccessful", ex);
+    }
+
+    private void setLeaderboardInvalidation(String freelancerId, String leaderboardKey, Jedis jedisConn) {
+        String invalidationKey = String.format("invalidation:%s", freelancerId);
+        jedisConn.sadd(invalidationKey, leaderboardKey);
+        jedisConn.expire(invalidationKey, 120);
+    }
+
+    public void invalidateFreelancer(String freelancerId, Jedis jedisConn) {
+        // TODO: add transaction?
+        String invalidationKey = String.format("invalidation:%s", freelancerId);
+        Set<String> leaderboardKeys = jedisConn.smembers(invalidationKey);
+        
+        for (String key : leaderboardKeys) {
+            jedisConn.del(key);
         }
+        jedisConn.del(invalidationKey);
+
+        String freelancerKey = String.format("freelancer:%s", freelancerId);
+        jedisConn.del(freelancerKey);
     }
 }

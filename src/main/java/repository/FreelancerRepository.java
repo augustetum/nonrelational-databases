@@ -20,7 +20,6 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import config.MongoDbContext;
 import dto.FreelancerDetailsDto;
-import dto.FreelancerRatingLeaderboardDto;
 import util.IdentifierGenerator;
 
 @Repository

@@ -72,19 +72,14 @@ public class LeaderboardCacheRepository extends CacheRepository {
     }
 
     public void setAverageRatingLeaderboard(List<FreelancerRatingLeaderboardDto> leaderboardDetails, Jedis jedisConn) {
-        Map<String, Double> ratings = new HashMap<>();
+        Map<String, Double> scores = new HashMap<>();
         
         for (FreelancerRatingLeaderboardDto dto : leaderboardDetails) {    
+            // calculate composite score
             String freelancerId = dto.getId();
+            double compositeScore = calculateCompositeScore(dto);
 
-            BigDecimal ratingBigDecimal = dto.getRating();
-            double rating = -1;
-
-            if (ratingBigDecimal != null) {
-                rating = ratingBigDecimal.doubleValue();
-            }
-
-            ratings.put(freelancerId, rating);
+            scores.put(freelancerId, compositeScore);
             
             // create leaderboard entry details
             String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
@@ -95,14 +90,29 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
         // create leaderboard
         String leaderboardKey = buildLeaderboardKey("averageRating");
-        jedisConn.zadd(leaderboardKey, ratings);
+        jedisConn.zadd(leaderboardKey, scores);
+    }
+
+    public boolean leaderboardExists(Jedis jedisConn) {
+        String leaderboardKey = buildLeaderboardKey("averageRating");
+        return jedisConn.exists(leaderboardKey);
     }
 
     public void updateAverageRatingLeaderboard(FreelancerRatingLeaderboardDto dto, Jedis jedisConn) {
+        // TODO: add transaction?
+
+        // update leaderboard entry
         String entryKey = buildLeaderboardEntryKey("averageRating", dto.getId());
         Map<String, String> hash = buildLeaderboardEntryHashMap(dto);
 
         jedisConn.hset(entryKey, hash);
+
+        // update leaderboard
+        String leaderboardKey = buildLeaderboardKey("averageRating");
+        String freelancerId = dto.getId();
+        double compositeScore = calculateCompositeScore(dto);
+        
+        jedisConn.zadd(leaderboardKey, compositeScore, freelancerId);
     }
 
     private String buildLeaderboardKey(String sortBy) {
@@ -164,5 +174,19 @@ public class LeaderboardCacheRepository extends CacheRepository {
         dto.setReviewNum(reviewNum);
 
         return dto;
+    }
+
+    private double calculateCompositeScore(FreelancerRatingLeaderboardDto dto) {
+        BigDecimal ratingBigDecimal = dto.getRating();
+        double rating = -1;
+
+        if (ratingBigDecimal != null) {
+            rating = ratingBigDecimal.doubleValue();
+        }
+
+        int reviewNum = dto.getReviewNum();
+        double compositeScore = rating * 100 + reviewNum;
+
+        return compositeScore;
     }
 }

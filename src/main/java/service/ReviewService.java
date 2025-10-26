@@ -50,30 +50,33 @@ public class ReviewService {
                 
                 // change leaderboard
                 // TODO: add transaction?
-                FreelancerRatingLeaderboardDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
-                
-                // re-calculate average rating
-                BigDecimal reviewRatingBigDecimal = review.getRating();
-                BigDecimal avgRatingBigDecimal = cachedDto.getRating();
-                
-                if (avgRatingBigDecimal == null) {
-                    avgRatingBigDecimal = BigDecimal.ZERO;
+                if (leaderboardCacheRepository.leaderboardExists(jedisConn))
+                {
+                    FreelancerRatingLeaderboardDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
+                    
+                    // re-calculate average rating
+                    BigDecimal reviewRatingBigDecimal = review.getRating();
+                    BigDecimal avgRatingBigDecimal = cachedDto.getRating();
+                    
+                    if (avgRatingBigDecimal == null) {
+                        avgRatingBigDecimal = BigDecimal.ZERO;
+                    }
+
+                    int reviewNum = cachedDto.getReviewNum();
+
+                    double reviewRating = reviewRatingBigDecimal.doubleValue();
+                    double avgRating = avgRatingBigDecimal.doubleValue();
+
+                    int updatedReviewNum = reviewNum + 1;
+                    double updatedAvgRating = (avgRating * reviewNum + reviewRating) / updatedReviewNum;
+
+                    BigDecimal updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
+
+                    cachedDto.setRating(updatedAvgRatingBigDecimal);
+                    cachedDto.setReviewNum(updatedReviewNum);
+
+                    leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
                 }
-
-                int reviewNum = cachedDto.getReviewNum();
-
-                double reviewRating = reviewRatingBigDecimal.doubleValue();
-                double avgRating = avgRatingBigDecimal.doubleValue();
-
-                int updatedReviewNum = reviewNum + 1;
-                double updatedAvgRating = (avgRating * reviewNum + reviewRating) / updatedReviewNum;
-
-                BigDecimal updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
-
-                cachedDto.setRating(updatedAvgRatingBigDecimal);
-                cachedDto.setReviewNum(updatedReviewNum);
-
-                leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
             }
 
             // db changes
@@ -100,29 +103,32 @@ public class ReviewService {
                 // TODO: add transaction?
                 // TODO: check if entry exists?
 
-                FreelancerRatingLeaderboardDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
-                
-                // re-calculate average rating
-                BigDecimal reviewRatingBigDecimal = review.getRating();
-                BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();
-                BigDecimal avgRatingBigDecimal = cachedDto.getRating();
+                if (leaderboardCacheRepository.leaderboardExists(jedisConn))
+                {
+                    FreelancerRatingLeaderboardDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(reviewId.revieweeId(), jedisConn);
+                    
+                    // re-calculate average rating
+                    BigDecimal reviewRatingBigDecimal = review.getRating();
+                    BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();
+                    BigDecimal avgRatingBigDecimal = cachedDto.getRating();
 
-                if (avgRatingBigDecimal == null) {
-                    avgRatingBigDecimal = BigDecimal.ZERO;
+                    if (avgRatingBigDecimal == null) {
+                        avgRatingBigDecimal = BigDecimal.ZERO;
+                    }
+
+                    int reviewNum = cachedDto.getReviewNum();
+
+                    double reviewRating = reviewRatingBigDecimal.doubleValue();
+                    double oldReviewRating = oldReviewRatingBigDecimal.doubleValue(); 
+                    double avgRating = avgRatingBigDecimal.doubleValue();
+
+                    double updatedAvgRating = (avgRating * reviewNum - oldReviewRating + reviewRating) / reviewNum;
+
+                    BigDecimal updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
+                    cachedDto.setRating(updatedAvgRatingBigDecimal);
+
+                    leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
                 }
-
-                int reviewNum = cachedDto.getReviewNum();
-
-                double reviewRating = reviewRatingBigDecimal.doubleValue();
-                double oldReviewRating = oldReviewRatingBigDecimal.doubleValue(); 
-                double avgRating = avgRatingBigDecimal.doubleValue();
-
-                double updatedAvgRating = (avgRating * reviewNum - oldReviewRating + reviewRating) / reviewNum;
-
-                BigDecimal updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
-                cachedDto.setRating(updatedAvgRatingBigDecimal);
-
-                leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
             }
 
             // db changes
@@ -144,41 +150,42 @@ public class ReviewService {
 
                 // change leaderboard
                 // TODO: add transaction?
-                // TODO: check if entry exists?
+                if (leaderboardCacheRepository.leaderboardExists(jedisConn))
+                {
+                    FreelancerRatingLeaderboardDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(id.revieweeId(), jedisConn);
+                    
+                    // re-calculate average rating
+                    BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();
+                    BigDecimal avgRatingBigDecimal = cachedDto.getRating();
 
-                FreelancerRatingLeaderboardDto cachedDto = leaderboardCacheRepository.getLeaderboardEntry(id.revieweeId(), jedisConn);
-                
-                // re-calculate average rating
-                BigDecimal oldReviewRatingBigDecimal = oldReview.getRating();
-                BigDecimal avgRatingBigDecimal = cachedDto.getRating();
+                    if (avgRatingBigDecimal == null) {
+                        avgRatingBigDecimal = BigDecimal.ZERO;
+                    }
 
-                if (avgRatingBigDecimal == null) {
-                    avgRatingBigDecimal = BigDecimal.ZERO;
+                    int reviewNum = cachedDto.getReviewNum();
+
+                    double oldReviewRating = oldReviewRatingBigDecimal.doubleValue(); 
+                    double avgRating = avgRatingBigDecimal.doubleValue();
+
+                    int updatedReviewNum = reviewNum - 1;
+                    double updatedAvgRating = 0;
+                    
+                    if (updatedReviewNum != 0)
+                    {    
+                        updatedAvgRating = (avgRating * reviewNum - oldReviewRating) / updatedReviewNum;
+                    }
+
+                    BigDecimal updatedAvgRatingBigDecimal = null;
+
+                    if (updatedReviewNum != 0) {
+                        updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
+                    }
+                    
+                    cachedDto.setRating(updatedAvgRatingBigDecimal);
+                    cachedDto.setReviewNum(updatedReviewNum);
+                    
+                    leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
                 }
-
-                int reviewNum = cachedDto.getReviewNum();
-
-                double oldReviewRating = oldReviewRatingBigDecimal.doubleValue(); 
-                double avgRating = avgRatingBigDecimal.doubleValue();
-
-                int updatedReviewNum = reviewNum - 1;
-                double updatedAvgRating = 0;
-                
-                if (updatedReviewNum != 0)
-                {    
-                    updatedAvgRating = (avgRating * reviewNum - oldReviewRating) / updatedReviewNum;
-                }
-
-                BigDecimal updatedAvgRatingBigDecimal = null;
-
-                if (updatedReviewNum != 0) {
-                    updatedAvgRatingBigDecimal = BigDecimal.valueOf(updatedAvgRating);
-                }
-                
-                cachedDto.setRating(updatedAvgRatingBigDecimal);
-                cachedDto.setReviewNum(updatedReviewNum);
-                
-                leaderboardCacheRepository.updateAverageRatingLeaderboard(cachedDto, jedisConn);
             }
 
             // db changes

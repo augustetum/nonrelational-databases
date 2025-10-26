@@ -61,7 +61,7 @@ public class FreelancerService {
         }
     }
     
-    public List<LeaderboardDetailsDto> getRatingLeaderboard(int limit, int skip) {
+    public List<LeaderboardDetailsDto> getLeaderboard(int limit, int skip) {
         List<LeaderboardDetailsDto> leaderboardDetails;
 
         // try to retrieve from cache

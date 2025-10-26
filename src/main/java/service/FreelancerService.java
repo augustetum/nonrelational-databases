@@ -77,7 +77,7 @@ public class FreelancerService {
         leaderboardDetails = leaderboardRepository.getRatingLeaderboard();
 
         try (Jedis jedisConn = leaderboardCacheRepository.getJedisConnection()) {
-            leaderboardCacheRepository.setAverageRatingLeaderboard(leaderboardDetails, jedisConn);
+            leaderboardCacheRepository.setLeaderboard(leaderboardDetails, jedisConn);
         }
 
         // return only requested items

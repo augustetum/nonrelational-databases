@@ -17,6 +17,7 @@ import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 import redis.clients.jedis.resps.Tuple;
+import util.mappers.LeaderboardDetailsMapper;
 
 @Repository
 public class LeaderboardCacheRepository extends CacheRepository {
@@ -72,26 +73,32 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return buildLeaderboardDto(freelancerId, entry);
     }
 
-    public void setAverageRatingLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
-        Map<String, Double> scores = new HashMap<>();
-        
-        for (LeaderboardDetailsDto dto : leaderboardDetails) {    
-            // calculate composite score
-            String freelancerId = dto.getId();
-            double compositeScore = calculateCompositeScore(dto);
-
-            scores.put(freelancerId, compositeScore);
-            
-            // create leaderboard entry details
-            String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-            Map<String, String> hash =  buildLeaderboardEntryHashMap(dto);
-            
-            jedisConn.hset(entryKey, hash);
-        }
-
-        // create leaderboard
+    public void setLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
         String leaderboardKey = buildLeaderboardKey("averageRating");
-        jedisConn.zadd(leaderboardKey, scores);
+        Map<String, Double> leaderboard = new HashMap<>();
+
+        jedisConn.watch(leaderboardKey);
+        Transaction transaction = jedisConn.multi();
+        try {
+            for (LeaderboardDetailsDto detailsDto : leaderboardDetails) {
+                // add to leaderboard data structure
+                String freelancerId = detailsDto.getId();
+                double compositeScore = calculateCompositeScore(detailsDto);
+                leaderboard.put(freelancerId, compositeScore);
+
+                // add leaderboard entry details
+                String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+                HashMap<String, String> entryDetails = LeaderboardDetailsMapper.toHashMap(detailsDto);
+                transaction.hset(entryDetailsKey, entryDetails);
+            }
+
+            transaction.zadd(leaderboardKey, leaderboard);
+            transaction.exec();
+        }
+        catch (Exception ex) {
+            transaction.discard();
+            throw ex;
+        }
     }
 
     public boolean leaderboardExists(Jedis jedisConn) {
@@ -128,26 +135,6 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
     private String buildLeaderboardEntryKey(String sortBy, String freelancerId) {
         return String.format("leaderboard:%s:%s", sortBy, freelancerId);
-    }
-
-    private Map<String, String> buildLeaderboardEntryHashMap(LeaderboardDetailsDto dto) {
-        Map<String, String> hash = new HashMap<>();
-        
-        // retrieve rating
-        BigDecimal ratingBigDecimal = dto.getRating();
-        double rating = -1;
-
-        if (ratingBigDecimal != null) {
-            rating = ratingBigDecimal.doubleValue();
-        }
-        
-        // create hash-map
-        hash.put("firstName", dto.getFirstName());
-        hash.put("lastName", dto.getLastName());
-        hash.put("rating", String.valueOf(rating));
-        hash.put("reviewNum", String.valueOf(dto.getReviewNum()));
-
-        return hash;
     }
 
     private LeaderboardDetailsDto buildLeaderboardDto(String freelancerId, Map<String, String> entry) {

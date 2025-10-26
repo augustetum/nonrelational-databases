@@ -42,6 +42,14 @@ public class ReviewService {
 
     public void addReview(Review review, boolean isClient) {
         if (isClient) {
+            // check if leaderboard is existant in cache
+            //      yes -> update cache
+            //      no -> ignore cache
+            //
+            // update db
+
+
+
             // update cache
             ReviewId reviewId = review.getId();
             try (Jedis jedisConn = freelancerCacheRepository.getJedisConnection()) {

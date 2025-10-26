@@ -1,6 +1,9 @@
 package util.mappers;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.bson.Document;
 import org.bson.types.Decimal128;
@@ -24,4 +27,18 @@ public class LeaderboardDetailsMapper {
 
         return dto;
     }
+
+    public static HashMap<String, String> toHashMap(LeaderboardDetailsDto detailsDto) {
+        HashMap<String, String> entryDetails = new HashMap<>();
+
+        entryDetails.put("firstName", detailsDto.getFirstName());
+        entryDetails.put("lastName", detailsDto.getLastName());
+        entryDetails.put("rating", detailsDto.getRating() != null 
+            ? detailsDto.getRating().setScale(2, RoundingMode.HALF_UP).toString() 
+            : "-1");
+        entryDetails.put("reviewNum", String.valueOf(detailsDto.getReviewNum()));
+
+        return entryDetails;
+    }
+
 }

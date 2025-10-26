@@ -3,6 +3,7 @@ package repository.cache;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,40 +27,32 @@ public class LeaderboardCacheRepository extends CacheRepository {
         super(jedisPool, objectMapper);
     }
 
-    public List<LeaderboardDetailsDto> getAverageRatingLeaderboard(int limit, int skip, Jedis jedisConn) {
-        // check if leaderboard exists in cache
+    public List<LeaderboardDetailsDto> getLeaderboard(int limit, int skip, Jedis jedisConn) {
         String leaderboardKey = buildLeaderboardKey("averageRating");
+
         if (!jedisConn.exists(leaderboardKey)) {
             return null;
         }
-        
-        // retrieve leaderboard
-        List<Tuple> leaderboard = jedisConn.zrevrangeWithScores(leaderboardKey, skip, skip + limit - 1);
-        
-        // retrieve leaderboard details
-        Pipeline pipeline = jedisConn.pipelined();
 
-        Map<String, Response<Map<String, String>>> leaderboardEntries = new HashMap<>();
+        // get leaderboard components
+        List<Tuple> leaderboard = jedisConn.zrevrangeWithScores(leaderboardKey, skip, skip + limit - 1);
+
+        Pipeline pipeline = jedisConn.pipelined();
+        Map<String, Response<Map<String, String>>> responses = new LinkedHashMap<>();
 
         for (Tuple pair : leaderboard) {
             String freelancerId = pair.getElement();
             String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-
-            leaderboardEntries.put(freelancerId, pipeline.hgetAll(entryKey));
+            responses.put(freelancerId, pipeline.hgetAll(entryKey));
         }
 
         pipeline.sync();
 
-        // combine data
-        List<LeaderboardDetailsDto> leaderboardDetails = new ArrayList<>();
-
-        for (Tuple pair : leaderboard) {            
-            String freelancerId = pair.getElement();
-            // retrieve entry details
-            Response<Map<String, String>> entryResponse = leaderboardEntries.get(freelancerId);
-            Map<String, String> entry = entryResponse.get();
-
-            LeaderboardDetailsDto dto = LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entry);
+        // get leaderboard details
+        List<LeaderboardDetailsDto> leaderboardDetails = new ArrayList<>(responses.size());
+        for (var entry : responses.entrySet()) {
+            Map<String, String> details = entry.getValue().get();
+            LeaderboardDetailsDto dto = LeaderboardDetailsMapper.toLeaderboardDetails(entry.getKey(), details);
             leaderboardDetails.add(dto);
         }
 
@@ -80,7 +73,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         jedisConn.watch(leaderboardKey); // TODO: resolve
         Transaction transaction = jedisConn.multi();
         try {
-            if (!jedisConn.exists(leaderboardKey)) {
+            if (!transaction.exists(leaderboardKey).get()) {
                 return;
             }
 

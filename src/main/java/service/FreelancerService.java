@@ -66,7 +66,7 @@ public class FreelancerService {
 
         // try to retrieve from cache
         try (Jedis jedisConn = leaderboardCacheRepository.getJedisConnection()) {
-            leaderboardDetails = leaderboardCacheRepository.getAverageRatingLeaderboard(limit, skip, jedisConn);
+            leaderboardDetails = leaderboardCacheRepository.getLeaderboard(limit, skip, jedisConn);
         }
 
         if (leaderboardDetails != null) {

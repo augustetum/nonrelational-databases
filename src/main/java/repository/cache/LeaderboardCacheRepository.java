@@ -150,8 +150,8 @@ public class LeaderboardCacheRepository extends CacheRepository {
         double oldAvgRatingDouble = oldAvgRating.doubleValue();
         double oldRatingDouble = oldRating.doubleValue();
         double newRatingDouble = newRating.doubleValue();
-        
-        double newAvgRatingDouble = (oldAvgRatingDouble * oldReviewNum - oldRatingDouble + newRatingDouble) / newReviewNum;
+
+        double newAvgRatingDouble = newReviewNum == 0 ? -1 : (oldAvgRatingDouble * oldReviewNum - oldRatingDouble + newRatingDouble) / newReviewNum;
         return BigDecimal.valueOf(newAvgRatingDouble);
     }
 

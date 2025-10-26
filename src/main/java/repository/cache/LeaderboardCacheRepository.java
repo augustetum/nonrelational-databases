@@ -67,49 +67,10 @@ public class LeaderboardCacheRepository extends CacheRepository {
         return leaderboardDetails;
     }
 
-    public LeaderboardDetailsDto getEntryDetails(String freelancerId, Jedis jedisConn) {
-        String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-        Map<String, String> entryDetails = jedisConn.hgetAll(entryKey);
-        return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
-    }
-
     public LeaderboardDetailsDto getEntryDetails(String freelancerId, Transaction transaction) {
         String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
         Map<String, String> entryDetails = transaction.hgetAll(entryKey).get();
         return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
-    }
-
-    public void setLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
-        String leaderboardKey = buildLeaderboardKey("averageRating");
-        Map<String, Double> leaderboard = new HashMap<>();
-
-        jedisConn.watch(leaderboardKey);
-        Transaction transaction = jedisConn.multi();
-        try {
-            for (LeaderboardDetailsDto detailsDto : leaderboardDetails) {
-                // add to leaderboard data structure
-                String freelancerId = detailsDto.getId();
-                double compositeScore = calculateCompositeScore(detailsDto);
-                leaderboard.put(freelancerId, compositeScore);
-
-                // add leaderboard entry details
-                String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
-                Map<String, String> entryDetails = LeaderboardDetailsMapper.toMap(detailsDto);
-                transaction.hset(entryDetailsKey, entryDetails);
-            }
-
-            transaction.zadd(leaderboardKey, leaderboard);
-            transaction.exec();
-        }
-        catch (Exception ex) {
-            transaction.discard();
-            throw ex;
-        }
-    }
-
-    public boolean leaderboardExists(Jedis jedisConn) {
-        String leaderboardKey = buildLeaderboardKey("averageRating");
-        return jedisConn.exists(leaderboardKey);
     }
 
     public void updateEntryDetailsOnAdd(Review review, Jedis jedisConn) {
@@ -168,6 +129,34 @@ public class LeaderboardCacheRepository extends CacheRepository {
             double compositeScore = calculateCompositeScore(newAvgRating, newReviewNum);
             transaction.zadd(leaderboardKey, compositeScore, freelancerId);
 
+            transaction.exec();
+        }
+        catch (Exception ex) {
+            transaction.discard();
+            throw ex;
+        }
+    }
+
+    public void setLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
+        String leaderboardKey = buildLeaderboardKey("averageRating");
+        Map<String, Double> leaderboard = new HashMap<>();
+
+        jedisConn.watch(leaderboardKey);
+        Transaction transaction = jedisConn.multi();
+        try {
+            for (LeaderboardDetailsDto detailsDto : leaderboardDetails) {
+                // add to leaderboard data structure
+                String freelancerId = detailsDto.getId();
+                double compositeScore = calculateCompositeScore(detailsDto);
+                leaderboard.put(freelancerId, compositeScore);
+
+                // add leaderboard entry details
+                String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+                Map<String, String> entryDetails = LeaderboardDetailsMapper.toMap(detailsDto);
+                transaction.hset(entryDetailsKey, entryDetails);
+            }
+
+            transaction.zadd(leaderboardKey, leaderboard);
             transaction.exec();
         }
         catch (Exception ex) {

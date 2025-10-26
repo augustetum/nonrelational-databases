@@ -28,7 +28,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
     }
 
     public List<LeaderboardDetailsDto> getLeaderboard(int limit, int skip, Jedis jedisConn) {
-        String leaderboardKey = buildLeaderboardKey("averageRating");
+        String leaderboardKey = buildLeaderboardKey();
 
         if (!jedisConn.exists(leaderboardKey)) {
             return null;
@@ -42,7 +42,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
 
         for (Tuple pair : leaderboard) {
             String freelancerId = pair.getElement();
-            String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+            String entryKey = buildLeaderboardEntryKey(freelancerId);
             responses.put(freelancerId, pipeline.hgetAll(entryKey));
         }
 
@@ -60,14 +60,14 @@ public class LeaderboardCacheRepository extends CacheRepository {
     }
 
     private LeaderboardDetailsDto getEntryDetails(String freelancerId, Jedis jedisConn) {
-        String entryKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        String entryKey = buildLeaderboardEntryKey(freelancerId);
         Map<String, String> entryDetails = jedisConn.hgetAll(entryKey);
         return LeaderboardDetailsMapper.toLeaderboardDetails(freelancerId, entryDetails);
     }
 
     public void updateEntryDetails(String freelancerId, BigDecimal oldRating, BigDecimal newRating, int reviewNumChange, Jedis jedisConn) {
-        String leaderboardKey = buildLeaderboardKey("averageRating");
-        String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+        String leaderboardKey = buildLeaderboardKey();
+        String entryDetailsKey = buildLeaderboardEntryKey(freelancerId);
         Map<String, String> updatedFields;
 
         jedisConn.watch(leaderboardKey, entryDetailsKey);
@@ -111,7 +111,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
     }
 
     public void setLeaderboard(List<LeaderboardDetailsDto> leaderboardDetails, Jedis jedisConn) {
-        String leaderboardKey = buildLeaderboardKey("averageRating");
+        String leaderboardKey = buildLeaderboardKey();
         Map<String, Double> leaderboard = new HashMap<>();
 
         jedisConn.watch(leaderboardKey);
@@ -124,7 +124,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
                 leaderboard.put(freelancerId, compositeScore);
 
                 // add leaderboard entry details
-                String entryDetailsKey = buildLeaderboardEntryKey("averageRating", freelancerId);
+                String entryDetailsKey = buildLeaderboardEntryKey(freelancerId);
                 Map<String, String> entryDetails = LeaderboardDetailsMapper.toMap(detailsDto);
                 transaction.hset(entryDetailsKey, entryDetails);
             }
@@ -138,12 +138,12 @@ public class LeaderboardCacheRepository extends CacheRepository {
         }
     }
 
-    private String buildLeaderboardKey(String sortBy) {
-        return String.format("leaderboard:%s", sortBy);
+    private String buildLeaderboardKey() {
+        return String.format("leaderboard");
     }
 
-    private String buildLeaderboardEntryKey(String sortBy, String freelancerId) {
-        return String.format("leaderboard:%s:%s", sortBy, freelancerId);
+    private String buildLeaderboardEntryKey(String freelancerId) {
+        return String.format("leaderboard:entry:%s", freelancerId);
     }
 
     private BigDecimal calculateRating(BigDecimal oldAvgRating, BigDecimal oldRating, int oldReviewNum, BigDecimal newRating, int newReviewNum) {

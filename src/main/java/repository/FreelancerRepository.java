@@ -103,10 +103,6 @@ public class FreelancerRepository {
         // sort entries
         pipeline.add(Aggregates.sort(Sorts.descending("averageRating")));
 
-        // pagination
-        pipeline.add(Aggregates.skip(skip));
-        pipeline.add(Aggregates.limit(limit));
-
         return collection.aggregate(pipeline)
             .into(new ArrayList<>())
             .stream()

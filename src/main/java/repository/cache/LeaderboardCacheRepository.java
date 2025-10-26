@@ -32,7 +32,7 @@ public class LeaderboardCacheRepository extends CacheRepository {
         }
         
         // retrieve leaderboard
-        List<Tuple> leaderboard = jedisConn.zrevrangeWithScores(leaderboardKey, skip, skip + limit);
+        List<Tuple> leaderboard = jedisConn.zrevrangeWithScores(leaderboardKey, skip, skip + limit - 1);
         
         // retrieve leaderboard details
         Pipeline pipeline = jedisConn.pipelined();

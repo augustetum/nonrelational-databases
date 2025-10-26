@@ -63,6 +63,7 @@ public class FreelancerService {
         }
 
         // cache miss logic
+        // TODO: add pagination
         leaderboardDetails = freelancerRepository.getRatingLeaderboard(limit, skip);
 
         try (Jedis jedisConn = leaderboardCacheRepository.getJedisConnection()) {

@@ -101,7 +101,6 @@ public class ReviewService {
 
                 // change leaderboard
                 // TODO: add transaction?
-                // TODO: check if entry exists?
 
                 if (leaderboardCacheRepository.leaderboardExists(jedisConn))
                 {

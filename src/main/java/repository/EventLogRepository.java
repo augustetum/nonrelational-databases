@@ -1,5 +1,6 @@
 package repository;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
@@ -35,14 +36,14 @@ public class EventLogRepository {
             event.setId(IdentifierGenerator.generateId());
         }
         if (event.getTime() == null) {
-            event.setTime(new Date());
+            event.setTime(Instant.now());
         }
 
         BoundStatement bound = insertStatement.bind(
                 event.getId(),
                 event.getTime(),
-                event.getType(),
-                event.getStatus(),
+                event.getEntityType(),
+                event.getEventStatus(),
                 event.getUserId(),
                 event.getDetails());
 
@@ -64,10 +65,9 @@ public class EventLogRepository {
     private Event mapRowToEvent(Row row) {
         Event event = new Event();
         event.setId(row.getString("id"));
-        event.setTime(row.getLocalDate("time")); // nei vienas cassandros date type nematchina ko man reikia tai mes
-                                                 // errorus bet ai bbd sutvarkysiu veliau
-        event.setType(row.getEvent("type")); // custom enumu cassandroj geriau nenaudot lmao!!! will fix later
-        event.setStatus(row.getStatus("status")); // once again custom enumas lol xd! reik tsg i stringus perconvertuot
+        event.setTime(row.getInstant("time"));
+        event.setEntityType(row.getString("entityType"));
+        event.setEventStatus(row.getString("eventStatus"));
         event.setUserId(row.getString("userId"));
         event.setDetails(row.getString("details"));
         return event;

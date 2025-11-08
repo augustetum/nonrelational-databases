@@ -35,8 +35,8 @@ public class FreelancerAuthService {
     public AuthResponse register(RegisterRequest request) {
         // Check if user already exists
         if (freelancerRepository.findByEmail(request.getEmail()).isPresent()) {
-            eventLogService.logEvent("CLIENT", null, "CLIENT_REGISTER", "FAILURE", null,
-                    "REGISTER");
+            eventLogService.logEvent("FREELANCER", null, "FREELANCER_REGISTER", "FAILURE", null,
+                    "EMAIL ALREADY REGISTERED");
             throw new RuntimeException("Email already registered");
         }
 
@@ -64,11 +64,17 @@ public class FreelancerAuthService {
                         request.getEmail(),
                         request.getPassword()));
 
-        var freelancer = freelancerRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        var freelancer = freelancerRepository.findByEmail(request.getEmail());
+        if (!freelancer.isPresent()) {
+            eventLogService.logEvent("FREELANCER", null, "FREELANCER_LOGIN", "FAILURE", null,
+                    "USER NOT FOUND");
+            throw new RuntimeException("User not found");
+        }
 
-        var jwtToken = jwtService.generateToken(new CustomFreelancerDetails(freelancer));
+        var presentFreelancer = freelancer.get();
 
-        return new AuthResponse(jwtToken, freelancer.getEmail());
+        var jwtToken = jwtService.generateToken(new CustomFreelancerDetails(presentFreelancer));
+
+        return new AuthResponse(jwtToken, presentFreelancer.getEmail());
     }
 }

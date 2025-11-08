@@ -65,11 +65,17 @@ public class ClientAuthService {
                         request.getEmail(),
                         request.getPassword()));
 
-        var client = clientRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        var client = clientRepository.findByEmail(request.getEmail());
+        if (!client.isPresent()) {
+            eventLogService.logEvent("CLIENT", null, "CLIENT_LOGIN", "FAILURE", null,
+                    "USER NOT FOUND");
+            throw new RuntimeException("User not found");
+        }
 
-        var jwtToken = jwtService.generateToken(new CustomClientDetails(client));
+        var presentClient = client.get();
 
-        return new AuthResponse(jwtToken, client.getEmail());
+        var jwtToken = jwtService.generateToken(new CustomClientDetails(presentClient));
+
+        return new AuthResponse(jwtToken, presentClient.getEmail());
     }
 }

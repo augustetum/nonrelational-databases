@@ -7,6 +7,7 @@ import service.BookingService;
 import service.BookingValidationService;
 import service.CustomClientDetails;
 import service.CustomFreelancerDetails;
+import service.EventLogService;
 import util.IdentifierGenerator;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,9 @@ public class BookingController {
     @Autowired
     private BookingPermissionService permissionService;
 
+    @Autowired
+    private EventLogService eventLogService;
+
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
         List<Booking> bookings = bookingService.getAllBookings();
@@ -89,10 +93,14 @@ public class BookingController {
 
         boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
 
-        if (!isClient)
+        if (!isClient) {
+            CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
+            eventLogService.logEvent("RESERVATION", null, "RESERVATION_CREATION", "FAILURE",
+                    userDetails.getUser().getId(),
+                    "IS NOT CLIENT");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can create bookings.");
+        }
 
-        // check if permissions are okay
         CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String clientId = userDetails.getUser().getId();
         String freelancerId = bookingRequest.getFreelancerId();
@@ -101,7 +109,6 @@ public class BookingController {
         if (permissionResult.isDenied())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
-        // if everything is intact, create a booking
         Booking booking = new Booking();
         booking.setId(IdentifierGenerator.generateId());
         booking.setTime(bookingRequest.getTime());
@@ -110,10 +117,8 @@ public class BookingController {
         booking.setClientId(clientId);
         booking.setFreelancerId(freelancerId);
 
-        // check if there are no null or invalid fields
         ValidationResultDto validationResult = validationService.validate(booking);
 
-        // create reservation and give the user a reservation key
         bookingService.createReservation(booking);
         if (validationResult.isInvalid())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
@@ -124,7 +129,6 @@ public class BookingController {
                 "remainingSeconds", remainingTime));
     }
 
-    // confirm booking using the booking id that was provided when creating it
     @PostMapping("/confirm/{bookingId}")
     public ResponseEntity<?> confirmBooking(@PathVariable String bookingId) {
         try {
@@ -138,7 +142,7 @@ public class BookingController {
     @PutMapping("/{bookingId}")
     public ResponseEntity<?> updateBooking(@PathVariable String bookingId,
             @RequestBody EditBookingRequestDto updatedBooking, Authentication authentication) {
-        // check if user can edit the provided booking
+
         CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String userId = userDetails.getUser().getId();
 
@@ -147,7 +151,6 @@ public class BookingController {
         if (permissionResult.isDenied())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
-        // create the updated booking
         Booking booking = new Booking();
         booking.setId(bookingId);
         booking.setTime(updatedBooking.getTime());
@@ -156,12 +159,10 @@ public class BookingController {
         booking.setClientId(userId);
         booking.setFreelancerId(bookingService.getById(bookingId).getFreelancerId());
 
-        // validate the updated booking
         ValidationResultDto validationResult = validationService.validate(booking);
         if (validationResult.isInvalid())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
 
-        // update the booking in the database
         bookingService.updateBooking(bookingId, booking);
         return ResponseEntity.ok().build();
     }
@@ -171,12 +172,12 @@ public class BookingController {
         bookingService.cancelReservation(reservationId);
         return ResponseEntity.ok(Map.of("message", "Reservation cancelled"));
     }
-    
+
     @PatchMapping("/{bookingId}/complete")
-    public ResponseEntity<?> markBookingAsCompleted(@PathVariable String bookingId, Authentication authentication){
+    public ResponseEntity<?> markBookingAsCompleted(@PathVariable String bookingId, Authentication authentication) {
         boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
 
-        if(!isClient) {
+        if (!isClient) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can mark bookings as completed.");
         }
 
@@ -185,13 +186,14 @@ public class BookingController {
 
         // Get the booking
         Booking booking = bookingService.getById(bookingId);
-        if(booking == null) {
+        if (booking == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Booking not found.");
         }
 
         // Verify the client owns this booking
-        if(!booking.getClientId().equals(clientId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can only mark your own bookings as completed.");
+        if (!booking.getClientId().equals(clientId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("You can only mark your own bookings as completed.");
         }
 
         // Update the booking status

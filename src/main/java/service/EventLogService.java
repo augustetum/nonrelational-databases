@@ -1,5 +1,7 @@
 package service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import entity.Event;
@@ -17,5 +19,9 @@ public class EventLogService {
             String details) {
         Event event = new Event(entityType, entityId, eventType, eventStatus, userId, details);
         eventLogRepository.save(event);
+    }
+
+    public List<Event> getAllEvents() {
+        return eventLogRepository.findAll();
     }
 }

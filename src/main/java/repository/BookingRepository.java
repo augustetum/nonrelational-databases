@@ -12,7 +12,6 @@ import com.mongodb.client.model.Updates;
 import config.MongoDbContext;
 import entity.Booking;
 import entity.BookingStatus;
-import util.IdentifierGenerator;
 
 @Repository
 public class BookingRepository {

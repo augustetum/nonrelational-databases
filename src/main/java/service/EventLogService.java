@@ -1,8 +1,11 @@
 package service;
 
+import org.springframework.stereotype.Service;
+
 import entity.Event;
 import repository.EventLogRepository;
 
+@Service
 public class EventLogService {
     private final EventLogRepository eventLogRepository;
 
@@ -10,8 +13,9 @@ public class EventLogService {
         this.eventLogRepository = eventLogRepository;
     }
 
-    public void logEvent(String entityType, String eventStatus, String userId, String details) {
-        Event event = new Event(entityType, eventStatus, userId, details);
+    public void logEvent(String entityType, String entityId, String eventType, String eventStatus, String userId,
+            String details) {
+        Event event = new Event(entityType, entityId, eventType, eventStatus, userId, details);
         eventLogRepository.save(event);
     }
 }

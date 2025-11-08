@@ -24,10 +24,10 @@ public class EventLogRepository {
         this.session = session;
 
         this.insertStatement = session.prepare(
-                "INSERT INTO events1 (id, time, entityType, entityId, eventType, eventStatus, userId, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                "INSERT INTO events (id, time, entityType, entityId, eventType, eventStatus, userId, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
         this.selectAllStatement = session.prepare(
-                "SELECT id, time, entityType, entityId, eventType, eventStatus, userId, details FROM events1");
+                "SELECT id, time, entityType, entityId, eventType, eventStatus, userId, details FROM events");
     }
 
     public Event save(Event event) {

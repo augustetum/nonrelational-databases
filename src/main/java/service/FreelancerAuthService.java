@@ -18,22 +18,25 @@ public class FreelancerAuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EventLogService eventLogService;
 
     public FreelancerAuthService(
             FreelancerRepository FreelancerRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthenticationManager authenticationManager
-    ) {
+            AuthenticationManager authenticationManager, EventLogService eventLogService) {
         this.freelancerRepository = FreelancerRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.eventLogService = eventLogService;
     }
 
     public AuthResponse register(RegisterRequest request) {
         // Check if user already exists
         if (freelancerRepository.findByEmail(request.getEmail()).isPresent()) {
+            eventLogService.logEvent("CLIENT", null, "CLIENT_REGISTER", "FAILURE", null,
+                    "REGISTER");
             throw new RuntimeException("Email already registered");
         }
 
@@ -59,9 +62,7 @@ public class FreelancerAuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
         var freelancer = freelancerRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));

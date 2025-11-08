@@ -37,7 +37,7 @@ public class ClientAuthService {
         // Check if user already exists
         if (clientRepository.findByEmail(request.getEmail()).isPresent()) {
             eventLogService.logEvent("CLIENT", null, "CLIENT_REGISTER", "FAILURE", null,
-                    "REGISTER");
+                    "EMAIL ALREADY REGISTERED");
             throw new RuntimeException("Email already registered");
         }
 

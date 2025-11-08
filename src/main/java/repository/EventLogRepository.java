@@ -1,6 +1,5 @@
 package repository;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +21,7 @@ public class EventLogRepository {
         this.session = session;
 
         this.insertStatement = session.prepare(
-                "INSERT INTO events (id, time, type, status, eventId, details) VALUES (?, ?, ?, ?)");
+                "INSERT INTO events (id, time, type, status, eventId, details) VALUES (?, ?, ?, ?, ?, ?)");
 
         this.selectAllStatement = session.prepare(
                 "SELECT id, time, type, status, eventId, details FROM events");
@@ -31,9 +30,6 @@ public class EventLogRepository {
     public Event save(Event event) {
         if (event.getId() == null) {
             event.setId(IdentifierGenerator.generateId());
-        }
-        if (event.getTime() == null) {
-            event.setTime(Instant.now());
         }
 
         BoundStatement bound = insertStatement.bind(
@@ -49,10 +45,10 @@ public class EventLogRepository {
     }
 
     public List<Event> findAll() {
-        ResultSet rs = session.execute(selectAllStatement.bind());
+        ResultSet rows = session.execute(selectAllStatement.bind());
         List<Event> events = new ArrayList<>();
 
-        for (Row row : rs) {
+        for (Row row : rows) {
             events.add(mapRowToEvent(row));
         }
 

@@ -21,15 +21,20 @@ public class ClientService {
         return maybeClientDetails;
     }
 
-    public void addClient(Client client){
+    public Optional<Client> getByEmail(String email) {
+        Optional<Client> maybeClient = clientRepository.findByEmail(email);
+        return maybeClient;
+    }
+
+    public void addClient(Client client) {
         clientRepository.add(client);
     }
 
-    public void editClientDetails(String userId, Client client){
+    public void editClientDetails(String userId, Client client) {
         clientRepository.update(userId, client);
     }
 
-    public void deleteClient(String userId){
+    public void deleteClient(String userId) {
         clientRepository.delete(userId);
     }
 }

@@ -31,7 +31,7 @@ public class BookingValidationService {
                 .orElse(ValidationResultDto.valid());
     }
 
-    public ValidationResultDto validateTime(Date time){
+    public ValidationResultDto validateTime(Date time) {
         Date now = new Date();
         long sixHoursInMillis = 6L * 60 * 60 * 1000;
         Date sixHoursFromNow = new Date(now.getTime() + sixHoursInMillis);
@@ -41,36 +41,36 @@ public class BookingValidationService {
         calendar.add(Calendar.MONTH, 1);
         Date oneMonthFromNow = calendar.getTime();
 
-        if(time == null){
+        if (time == null) {
             return ValidationResultDto.invalid("Booking time cannot be null.");
         }
 
-        if(time.before(sixHoursFromNow)){
+        if (time.before(sixHoursFromNow)) {
             return ValidationResultDto.invalid("Booking time cannot be less than six hours from now.");
         }
 
-        if(time.after(oneMonthFromNow)){
+        if (time.after(oneMonthFromNow)) {
             return ValidationResultDto.invalid("Booking time cannot be more than a month from now.");
         }
         return ValidationResultDto.valid();
     }
 
-    public ValidationResultDto validateAddress(String address){
-        if(address == null){
+    public ValidationResultDto validateAddress(String address) {
+        if (address == null) {
             return ValidationResultDto.invalid("Address cannot be null");
         }
         return ValidationResultDto.valid();
     }
 
-    public ValidationResultDto validateDetails(String details){
-        if(details==null){
+    public ValidationResultDto validateDetails(String details) {
+        if (details == null) {
             return ValidationResultDto.invalid("Details cannot be null");
         }
         return ValidationResultDto.valid();
     }
 
-    public ValidationResultDto validateFreelancerId(String freelancerId){
-        if(freelancerId==null){
+    public ValidationResultDto validateFreelancerId(String freelancerId) {
+        if (freelancerId == null) {
             return ValidationResultDto.invalid("Freelancer ID cannot be null");
         }
         return ValidationResultDto.valid();

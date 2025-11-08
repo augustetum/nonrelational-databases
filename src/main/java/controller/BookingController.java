@@ -95,7 +95,7 @@ public class BookingController {
 
         if (!isClient) {
             CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
-            eventLogService.logEvent("RESERVATION", null, "RESERVATION_CREATION", "FAILURE",
+            eventLogService.logEvent("BOOKING", null, "BOOKING_CREATE", "FAILURE",
                     userDetails.getUser().getId(),
                     "IS NOT CLIENT");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Only clients can create bookings.");
@@ -105,7 +105,7 @@ public class BookingController {
         String clientId = userDetails.getUser().getId();
         String freelancerId = bookingRequest.getFreelancerId();
 
-        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(bookingRequest);
+        PermissionCheckResultDto permissionResult = permissionService.canCreateBooking(bookingRequest, clientId);
         if (permissionResult.isDenied())
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
 
@@ -119,9 +119,16 @@ public class BookingController {
 
         ValidationResultDto validationResult = validationService.validate(booking);
 
-        bookingService.createReservation(booking);
-        if (validationResult.isInvalid())
+        if (validationResult.isInvalid()) {
+            eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_CREATE", "FAILURE", clientId,
+                    "INVALID BOOKING");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+        }
+
+        bookingService.createReservation(booking);
+        eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_CREATE", "SUCCESS", clientId,
+                "BOOKING_TIME: " + booking.getTime() + ", BOOKING_ADDRESS: " + booking.getAddress() + ", DETAILS: "
+                        + booking.getDetails() + ", FREELANCER_ID: " + freelancerId);
 
         Long remainingTime = bookingService.getRemainingTime(booking.getId());
         return ResponseEntity.ok(Map.of(
@@ -132,7 +139,11 @@ public class BookingController {
     @PostMapping("/confirm/{bookingId}")
     public ResponseEntity<?> confirmBooking(@PathVariable String bookingId) {
         try {
+            Booking booking = bookingService.getReservation(bookingId);
             bookingService.confirmBooking(bookingId);
+            eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_CONFIRM", "SUCCESS", booking.getClientId(),
+                    "BOOKING_TIME: " + booking.getTime() + ", BOOKING_ADDRESS: " + booking.getAddress() + ", DETAILS: "
+                            + booking.getDetails() + ", FREELANCER_ID: " + booking.getFreelancerId());
             return ResponseEntity.ok(Map.of("message", "Booking confirmed"));
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -160,16 +171,25 @@ public class BookingController {
         booking.setFreelancerId(bookingService.getById(bookingId).getFreelancerId());
 
         ValidationResultDto validationResult = validationService.validate(booking);
-        if (validationResult.isInvalid())
+        if (validationResult.isInvalid()) {
+            eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_EDIT", "FAILURE", userId,
+                    "BOOKING INVALID");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+        }
 
         bookingService.updateBooking(bookingId, booking);
+        eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_EDIT", "SUCCESS", userId,
+                "BOOKING_TIME: " + booking.getTime() + ", BOOKING_ADDRESS: " + booking.getAddress() + ", DETAILS: "
+                        + booking.getDetails() + ", FREELANCER_ID: " + booking.getFreelancerId());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/cancel/{reservationId}")
     public ResponseEntity<?> cancelReservation(@PathVariable String reservationId) {
+        Booking booking = bookingService.getReservation(reservationId);
         bookingService.cancelReservation(reservationId);
+        eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_CONFIRM", "FAILURE", booking.getClientId(),
+                "RESERVATION CANCELLED");
         return ResponseEntity.ok(Map.of("message", "Reservation cancelled"));
     }
 
@@ -192,12 +212,17 @@ public class BookingController {
 
         // Verify the client owns this booking
         if (!booking.getClientId().equals(clientId)) {
+            eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_COMPLETE", "SUCCESS", clientId,
+                    "BOOKING DOES NOT BELONG TO CLIENT");
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("You can only mark your own bookings as completed.");
         }
 
         // Update the booking status
         bookingService.updateBookingStatus(bookingId, BookingStatus.COMPLETED);
+        eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_COMPLETE", "SUCCESS", clientId,
+                "BOOKING_TIME: " + booking.getTime() + ", BOOKING_ADDRESS: " + booking.getAddress() + ", DETAILS: "
+                        + booking.getDetails() + ", FREELANCER_ID: " + booking.getFreelancerId());
         return ResponseEntity.ok().build();
     }
 
@@ -220,7 +245,9 @@ public class BookingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
 
+        Booking booking = bookingService.getById(bookingId);
         bookingService.deleteBooking(bookingId);
+        eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_DELETE", "SUCCESS", booking.getClientId(), null);
         return ResponseEntity.ok().build();
     }
 }

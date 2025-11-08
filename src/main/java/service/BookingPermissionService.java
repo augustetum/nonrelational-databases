@@ -66,7 +66,7 @@ public class BookingPermissionService {
     public PermissionCheckResultDto canCreateBooking(CreateBookingRequestDto potentialBooking, String clientId) {
         if (!isFree(bookingRepository.getByFreelancerId(potentialBooking.getFreelancerId()),
                 potentialBooking.getTime())) {
-            eventLogService.logEvent("RESERVATION", null, "RESERVATION_CREATE", "FAILURE", clientId,
+            eventLogService.logEvent("BOOKING", null, "BOOKING_CREATE", "FAILURE", clientId,
                     "FREELANCER_ID: " + potentialBooking.getFreelancerId() + ", FREELANCER BUSY");
             return PermissionCheckResultDto.invalid("The requested freelancer is already booked on that day");
         }

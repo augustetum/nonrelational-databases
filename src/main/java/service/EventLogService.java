@@ -33,4 +33,12 @@ public class EventLogService {
     public List<Event> getByDate(Instant start, Instant end) {
         return eventLogRepository.getByDate(start, end);
     }
+
+    public List<Event> getByEntityType(String entityType) {
+        return eventLogRepository.getByEntityType(entityType);
+    }
+
+    public Event getById(String id) {
+        return eventLogRepository.getById(id);
+    }
 }

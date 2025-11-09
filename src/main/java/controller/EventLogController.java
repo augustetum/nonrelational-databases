@@ -2,9 +2,7 @@ package controller;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -55,4 +53,19 @@ public class EventLogController {
         return ResponseEntity.ok(eventLog);
     }
 
+    @GetMapping("/entity")
+    public ResponseEntity<?> getByEntity(@RequestParam String entityType) {
+        List<Event> eventLog = eventLogService.getByEntityType(entityType);
+        if (eventLog.isEmpty())
+            return ResponseEntity.ok("Nothing to show");
+        return ResponseEntity.ok(eventLog);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getById(@RequestParam String id) {
+        Event event = eventLogService.getById(id);
+        if (event == null)
+            return ResponseEntity.ok("Nothing to show");
+        return ResponseEntity.ok(event);
+    }
 }

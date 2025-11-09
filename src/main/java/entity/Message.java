@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 
 @Data
 public class Message {
-    private String id;
-    private LocalDateTime timestamp;
-    private String from;
-    private String to;
+    private String messageId;
+    private String conversationId;
+    private String senderId;
     private String content;
+    private LocalDateTime timestamp;
 }

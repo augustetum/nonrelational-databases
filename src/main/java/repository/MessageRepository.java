@@ -17,41 +17,60 @@ import java.util.List;
 @Repository
 public class MessageRepository {
     private final CqlSession session;
-    private final PreparedStatement insertStatement;
-    private final PreparedStatement selectByConversationStatement;
+
+    private final PreparedStatement selectByConversation;
+
+    private final PreparedStatement insertIntoMessagesByConversation;
+    private final PreparedStatement insertIntoMessagesBySender;
 
     public MessageRepository(CqlSession session) {
         this.session = session;
 
-        this.insertStatement = session.prepare(
-                "INSERT INTO messages (conversation_id, timestamp, id, from_user, to_user, content) " +
-                        "VALUES (?, ?, ?, ?, ?, ?)");
+        this.selectByConversation = session.prepare(
+            "SELECT message_id, conversation_id, sender_id, content, timestamp " +
+            "FROM messages_by_conversation WHERE conversation_id = ? LIMIT ?"
+        );
 
-        this.selectByConversationStatement = session.prepare(
-                "SELECT conversation_id, timestamp, id, from_user, to_user, content " +
-                        "FROM messages WHERE conversation_id = ? LIMIT ?");
+        this.insertIntoMessagesByConversation = session.prepare(
+            "INSERT INTO messages_by_conversation (message_id, conversation_id, sender_id, content, timestamp) " +
+            "VALUES (?, ?, ?, ?, ?)"
+        );
+
+        this.insertIntoMessagesBySender = session.prepare(
+            "INSERT INTO messages_by_sender (message_id, conversation_id, sender_id, content, timestamp) " +
+            "VALUES (?, ?, ?, ?, ?)"
+        );
     }
 
-    public void save(Message message, String conversationId) {
+    public void save(Message message) {
         Instant timestamp = message.getTimestamp()
                 .atZone(ZoneId.systemDefault())
                 .toInstant();
 
-        BoundStatement bound = insertStatement.bind(
-                conversationId,
-                timestamp,
-                message.getId(),
-                message.getFrom(),
-                message.getTo(),
-                message.getContent()
+        BoundStatement byChatInsert = insertIntoMessagesByConversation.bind(
+            message.getMessageId(),
+            message.getConversationId(),
+            message.getSenderId(),
+            message.getContent(),
+            timestamp
         );
 
-        session.execute(bound);
+        BoundStatement bySenderInsert = insertIntoMessagesBySender.bind(
+            message.getMessageId(),
+            message.getConversationId(),
+            message.getSenderId(),
+            message.getContent(),
+            timestamp
+        );
+
+        session.execute(byChatInsert);
+        session.execute(bySenderInsert);
     }
 
     public List<Message> findByConversationId(String conversationId, int limit) {
-        BoundStatement bound = selectByConversationStatement.bind(conversationId, limit);
-        ResultSet rows = session.execute(bound);
+        BoundStatement byChatSelect = selectByConversation.bind(conversationId, limit);
+
+        ResultSet rows = session.execute(byChatSelect);
         List<Message> messages = new ArrayList<>();
 
         for (Row row : rows) {
@@ -63,10 +82,18 @@ public class MessageRepository {
 
     private Message mapRowToMessage(Row row) {
         Message message = new Message();
-        message.setId(row.getString("id"));
-        message.setFrom(row.getString("from_user"));
-        message.setTo(row.getString("to_user"));
-        message.setContent(row.getString("content"));
+
+        String messsageId = row.getString("message_id");
+        message.setMessageId(messsageId);
+
+        String conversationId = row.getString("conversation_id");
+        message.setConversationId(conversationId);
+
+        String senderId = row.getString("sender_id");
+        message.setSenderId(senderId);
+
+        String content = row.getString("content");
+        message.setContent(content);
 
         Instant instant = row.getInstant("timestamp");
         if (instant != null) {

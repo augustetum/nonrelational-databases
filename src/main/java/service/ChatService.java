@@ -23,17 +23,17 @@ public class ChatService{
         this.userRegistry = userRegistry;
     }
 
-    public void sendPrivateMessage(String from, String to, String content) {
+    public void sendPrivateMessage(String conversationId, String senderId, String content) {
         Message message = new Message();
-        message.setId(IdentifierGenerator.generateId());
-        message.setFrom(from);
-        message.setTo(to);
+        message.setMessageId(IdentifierGenerator.generateId());
+        message.setConversationId(conversationId);
+        message.setSenderId(senderId);
         message.setContent(content);
         message.setTimestamp(LocalDateTime.now());
 
-        messageRepository.save(message, generateConversationId(from, to));
+        messageRepository.save(message);
 
-        String destination = "/queue/messages-" + to;
+        String destination = "/queue/messages-" + conversationId;
         messagingTemplate.convertAndSend(destination, message);
     }
 

@@ -24,4 +24,8 @@ public class EventLogService {
     public List<Event> getAllEvents() {
         return eventLogRepository.findAll();
     }
+
+    public List<Event> getByUserId(String userId) {
+        return eventLogRepository.getByUserId(userId);
+    }
 }

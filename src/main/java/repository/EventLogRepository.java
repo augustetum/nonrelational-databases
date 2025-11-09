@@ -19,6 +19,9 @@ public class EventLogRepository {
     private final CqlSession session;
     private final PreparedStatement insertStatement;
     private final PreparedStatement selectAllStatement;
+    private final PreparedStatement selectByUserStatement;
+    private final PreparedStatement selectByDateStatement;
+    private final PreparedStatement selectByUserAndDateStatement;
 
     public EventLogRepository(CqlSession session) {
         this.session = session;
@@ -28,7 +31,18 @@ public class EventLogRepository {
 
         this.selectAllStatement = session.prepare(
                 "SELECT id, time, entityType, entityId, eventType, eventStatus, userId, details FROM events");
+
+        this.selectByUserStatement = session.prepare(
+                "SELECT id, time, entityType, entityId, eventType, eventStatus, userId, details FROM events WHERE userId = ?");
+
+        this.selectByDateStatement = session.prepare(
+                "SELECT id, time, entityType, entityId, eventType, eventStatus, userId, details FROM events WHERE time >= ? AND time <= ?");
+
+        this.selectByUserAndDateStatement = session.prepare(
+                "SELECT id, time, entityType, entityId, eventType, eventStatus, userId, details FROM events WHERE userId = ? AND (time >= ? AND <= ?)");
     }
+
+    // CREATE TABLE IF NOT EXISTS darbsciu_rankuciu_klubas.events (id TEXT, time TIMESTAMP, entityType TEXT, entityId TEXT, eventType TEXT, eventStatus TEXT, userId TEXT, details TEXT, PRIMARY KEY (userId, time, id)) WITH CLUSTERING ORDER BY (time DESC);
 
     public Event save(Event event) {
         if (event.getId() == null) {
@@ -51,6 +65,17 @@ public class EventLogRepository {
 
     public List<Event> findAll() {
         ResultSet rows = session.execute(selectAllStatement.bind());
+        List<Event> events = new ArrayList<>();
+
+        for (Row row : rows) {
+            events.add(mapRowToEvent(row));
+        }
+
+        return events;
+    }
+
+    public List<Event> getByUserId(String userId) {
+        ResultSet rows = session.execute(selectByUserStatement.bind(userId));
         List<Event> events = new ArrayList<>();
 
         for (Row row : rows) {

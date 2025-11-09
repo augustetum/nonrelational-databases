@@ -19,6 +19,7 @@ public class MessageRepository {
     private final CqlSession session;
 
     private final PreparedStatement selectByConversation;
+    private final PreparedStatement selectBySender;
 
     private final PreparedStatement insertIntoMessagesByConversation;
     private final PreparedStatement insertIntoMessagesBySender;
@@ -28,17 +29,22 @@ public class MessageRepository {
 
         this.selectByConversation = session.prepare(
             "SELECT message_id, conversation_id, sender_id, content, timestamp " +
-            "FROM messages_by_conversation WHERE conversation_id = ? LIMIT ?"
+            "FROM messages_by_conversation WHERE conversation_id = ? LIMIT ?;"
+        );
+
+        this.selectBySender = session.prepare(
+            "SELECT message_id, conversation_id, sender_id, content, timestamp " +
+            "FROM messages_by_sender WHERE sender_id = ? LIMIT ?;"
         );
 
         this.insertIntoMessagesByConversation = session.prepare(
             "INSERT INTO messages_by_conversation (message_id, conversation_id, sender_id, content, timestamp) " +
-            "VALUES (?, ?, ?, ?, ?)"
+            "VALUES (?, ?, ?, ?, ?);"
         );
 
         this.insertIntoMessagesBySender = session.prepare(
             "INSERT INTO messages_by_sender (message_id, conversation_id, sender_id, content, timestamp) " +
-            "VALUES (?, ?, ?, ?, ?)"
+            "VALUES (?, ?, ?, ?, ?);"
         );
     }
 
@@ -68,9 +74,22 @@ public class MessageRepository {
     }
 
     public List<Message> findByConversationId(String conversationId, int limit) {
-        BoundStatement byChatSelect = selectByConversation.bind(conversationId, limit);
+        BoundStatement byConversationSelect = selectByConversation.bind(conversationId, limit);
 
-        ResultSet rows = session.execute(byChatSelect);
+        ResultSet rows = session.execute(byConversationSelect);
+        List<Message> messages = new ArrayList<>();
+
+        for (Row row : rows) {
+            messages.add(mapRowToMessage(row));
+        }
+
+        return messages;
+    }
+
+    public List<Message> findBySenderId(String senderId, int limit) {
+        BoundStatement bySenderSelect = selectBySender.bind(senderId, limit);
+
+        ResultSet rows = session.execute(bySenderSelect);
         List<Message> messages = new ArrayList<>();
 
         for (Row row : rows) {

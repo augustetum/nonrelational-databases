@@ -8,7 +8,6 @@ import repository.MessageRepository;
 import util.IdentifierGenerator;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -37,13 +36,11 @@ public class ChatService{
         messagingTemplate.convertAndSend(destination, message);
     }
 
-    public List<Message> getConversationHistory(String user1, String user2) {
-        return messageRepository.findByConversationId(generateConversationId(user1, user2), 50);
+    public List<Message> getConversationHistory(String conversationId) {
+        return messageRepository.findByConversationId(conversationId, 50);
     }
 
-    private String generateConversationId(String user1, String user2) {
-        String[] users = {user1, user2};
-        Arrays.sort(users);
-        return users[0] + "_" + users[1];
+    public List<Message> getUserMessages(String senderId) {
+        return messageRepository.findBySenderId(senderId, 50);
     }
 }

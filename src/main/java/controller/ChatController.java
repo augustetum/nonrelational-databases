@@ -36,9 +36,15 @@ public class ChatController {
         chatService.sendPrivateMessage(message.getConversationId(), username, message.getContent());
     }
 
-    @GetMapping("/api/chat/history/{userId}")
-    public ResponseEntity<?> getHistory(@PathVariable String userId, Principal principal) {
-        List<Message> result = chatService.getConversationHistory(principal.getName(), userId);
+    @GetMapping("/api/chat/history/{conversationId}")
+    public ResponseEntity<?> getConversationHistory(@PathVariable String conversationId, Principal principal) {
+        List<Message> result = chatService.getConversationHistory(conversationId);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/api/chat/messages/{userId}")
+    public ResponseEntity<?> getUserMessages(@PathVariable String userId, Principal principal) {
+        List<Message> result = chatService.getUserMessages(userId);
         return ResponseEntity.ok(result);
     }
 }

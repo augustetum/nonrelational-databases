@@ -77,10 +77,10 @@ public class ChatController {
 
         String recipientId = newConversationDto.getRecipientId();
         if (isClient) {
-            chatService.createConversation(userId, recipientId);    
+            chatService.createConversation(recipientId, userId);   
         } 
         else {
-            chatService.createConversation(recipientId, userId);   
+            chatService.createConversation(userId, recipientId);    
         }
 
         return ResponseEntity.ok().build();

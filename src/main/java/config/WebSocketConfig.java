@@ -27,13 +27,16 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic","/queue"); //queue leidžia p2p, topic labiau notificationam / public announcements
+        config.enableSimpleBroker("/topic","/queue","/user"); //queue leidžia p2p, topic labiau notificationam / public announcements
         config.setApplicationDestinationPrefixes("/app");
+        config.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/chat").withSockJS();
+        registry.addEndpoint("/chat")
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
     }
 
     @Override
@@ -44,19 +47,42 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
 
                 if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                    System.out.println("CONNECT command received");
                     String token = extractToken(accessor);
+                    System.out.println("Extracted token: " + (token != null ? "present" : "null"));
 
                     if (token != null) {
                         try {
                             String username = jwtService.extractUsername(token);
+                            System.out.println("Extracted username: " + username);
                             if (username != null && !username.isEmpty()) {
                                 UsernamePasswordAuthenticationToken auth =
                                         new UsernamePasswordAuthenticationToken(username, null, Collections.emptyList());
                                 accessor.setUser(auth);
+                                accessor.getSessionAttributes().put("username", username);
                             }
                         } catch (Exception e) {
                             System.err.println("Invalid JWT token: " + e.getMessage());
+                            e.printStackTrace();
                         }
+                    } else {
+                        System.err.println("No token found in headers");
+                    }
+                } else if (StompCommand.MESSAGE.equals(accessor.getCommand()) ||
+                           StompCommand.SEND.equals(accessor.getCommand()) ||
+                           StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+                    // tolimesnem zinutem is sessiono useris
+                    if (accessor.getSessionAttributes() != null) {
+                        String username = (String) accessor.getSessionAttributes().get("username");
+                        if (username != null) {
+                            UsernamePasswordAuthenticationToken auth =
+                                    new UsernamePasswordAuthenticationToken(username, null, Collections.emptyList());
+                            accessor.setUser(auth);
+                        } else {
+                            System.err.println("Username is null in session");
+                        }
+                    } else {
+                        System.err.println("Session attributes is null");
                     }
                 }
 

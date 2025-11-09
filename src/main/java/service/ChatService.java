@@ -2,6 +2,7 @@ package service;
 
 import entity.Message;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Service;
 import repository.MessageRepository;
 import util.IdentifierGenerator;
@@ -14,10 +15,12 @@ import java.util.List;
 public class ChatService{
     private final MessageRepository messageRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final SimpUserRegistry userRegistry;
 
-    public ChatService(MessageRepository messageRepository, SimpMessagingTemplate messagingTemplate) {
+    public ChatService(MessageRepository messageRepository, SimpMessagingTemplate messagingTemplate, SimpUserRegistry userRegistry) {
         this.messageRepository = messageRepository;
         this.messagingTemplate = messagingTemplate;
+        this.userRegistry = userRegistry;
     }
 
     public void sendPrivateMessage(String from, String to, String content) {
@@ -29,7 +32,9 @@ public class ChatService{
         message.setTimestamp(LocalDateTime.now());
 
         messageRepository.save(message, generateConversationId(from, to));
-        messagingTemplate.convertAndSendToUser(to, "/queue/messages", message);
+
+        String destination = "/queue/messages-" + to;
+        messagingTemplate.convertAndSend(destination, message);
     }
 
     public List<Message> getConversationHistory(String user1, String user2) {

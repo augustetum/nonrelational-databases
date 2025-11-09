@@ -1,8 +1,10 @@
 package controller;
 
 import entity.Message;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,8 +22,13 @@ public class ChatController {
     }
 
     @MessageMapping("/chat.private")
-    public void sendPrivateMessage(@Payload Message message, Principal principal) {
-        chatService.sendPrivateMessage(principal.getName(), message.getTo(), message.getContent());
+    public void sendPrivateMessage(@Payload Message message, SimpMessageHeaderAccessor headerAccessor) {
+        String username = (String) headerAccessor.getSessionAttributes().get("username");
+        if (username == null) {
+            System.err.println("Username not found in session!");
+            return;
+        }
+        chatService.sendPrivateMessage(username, message.getTo(), message.getContent());
     }
 
     @GetMapping("/api/chat/history/{userId}")

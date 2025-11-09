@@ -22,17 +22,20 @@ import java.util.stream.Collectors;
 public class BookingService {
     private final BookingRepository repository;
     private final FreelancerCacheRepository freelancerCacheRepository;
+    private final EventLogService eventLogService;
 
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
 
     private static final int RESERVATION_TTL_SECONDS = 600;
 
-    public BookingService(BookingRepository repository, FreelancerCacheRepository freelancerCacheRepository, JedisPool jedisPool, ObjectMapper objectMapper) {
+    public BookingService(BookingRepository repository, FreelancerCacheRepository freelancerCacheRepository,
+            JedisPool jedisPool, ObjectMapper objectMapper, EventLogService eventLogService) {
         this.repository = repository;
         this.jedisPool = jedisPool;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+        this.eventLogService = eventLogService;
 
         this.freelancerCacheRepository = freelancerCacheRepository;
     }
@@ -63,6 +66,8 @@ public class BookingService {
         try (Jedis jedis = jedisPool.getResource()) {
             String dateKey = buildDateKey(booking.getFreelancerId(), booking.getTime());
             if (jedis.exists(dateKey)) {
+                eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_CREATE", "FAILURE",
+                        booking.getClientId(), "DATE ALREADY RESERVED");
                 throw new IllegalStateException("This date is already reserved");
             }
 
@@ -77,6 +82,8 @@ public class BookingService {
 
             return booking;
         } catch (Exception e) {
+            eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_CREATE", "FAILURE",
+                    booking.getClientId(), null);
             throw new RuntimeException("Failed to create reservation", e);
         }
     }
@@ -108,6 +115,7 @@ public class BookingService {
             Booking booking = getReservation(bookingId);
 
             if (booking == null) {
+                eventLogService.logEvent("BOOKING", bookingId, "BOOKING_CONFIRM", "FAILURE", null, "BOOKING NOT FOUND");
                 throw new IllegalStateException("Reservation not found or expired");
             }
 
@@ -157,7 +165,7 @@ public class BookingService {
         repository.delete(bookingId);
     }
 
-    public void updateBookingStatus(String bookingId, BookingStatus status){
+    public void updateBookingStatus(String bookingId, BookingStatus status) {
         repository.updateStatus(bookingId, status);
         Booking booking = repository.getById(bookingId);
 

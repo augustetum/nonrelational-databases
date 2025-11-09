@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import service.CustomFreelancerDetails;
+import service.EventLogService;
 import service.WorkfieldService;
 import service.WorkfieldValidationService;
 
@@ -25,14 +26,17 @@ public class WorkfieldController {
     @Autowired
     private WorkfieldValidationService validationService;
 
+    @Autowired
+    private EventLogService eventLogService;
+
     @GetMapping
-    public ResponseEntity<List<Workfield>> getAllWorkfields(){
+    public ResponseEntity<List<Workfield>> getAllWorkfields() {
         List<Workfield> workfields = workfieldService.getAllWorkfields();
         return ResponseEntity.ok(workfields);
     }
 
     @GetMapping("/freelancer")
-    public ResponseEntity<List<Workfield>> getWorkfieldsByCurrentFreelancer(Authentication authentication){
+    public ResponseEntity<List<Workfield>> getWorkfieldsByCurrentFreelancer(Authentication authentication) {
         CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
         String freelancerId = userDetails.getUser().getId();
 
@@ -41,14 +45,15 @@ public class WorkfieldController {
     }
 
     @GetMapping("/{category}")
-    public ResponseEntity<List<Workfield>> getWorkfieldsByCategory(@PathVariable WorkfieldCategory category){
+    public ResponseEntity<List<Workfield>> getWorkfieldsByCategory(@PathVariable WorkfieldCategory category) {
         List<Workfield> workfields = workfieldService.getAllWorkfieldsByCategory(category);
         return ResponseEntity.ok(workfields);
     }
 
     @GetMapping("/freelancer/{category}")
-    public ResponseEntity<List<Workfield>> getWorkfieldsByFreelancerIdByCategory(@PathVariable WorkfieldCategory category,
-    Authentication authentication){
+    public ResponseEntity<List<Workfield>> getWorkfieldsByFreelancerIdByCategory(
+            @PathVariable WorkfieldCategory category,
+            Authentication authentication) {
         CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
         String freelancerId = userDetails.getUser().getId();
         List<Workfield> workfields = workfieldService.getAllWorkfieldsByCategoryByFreelancerId(freelancerId, category);
@@ -57,8 +62,8 @@ public class WorkfieldController {
 
     @PutMapping("/{workfieldId}")
     public ResponseEntity<?> editWorkfield(@PathVariable String workfieldId,
-                                           Authentication authentication,
-                                           @RequestBody EditWorkfieldDto dto){
+            Authentication authentication,
+            @RequestBody EditWorkfieldDto dto) {
         CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
         String freelancerId = userDetails.getUser().getId();
 
@@ -70,33 +75,45 @@ public class WorkfieldController {
 
         ValidationResultDto validationResult = validationService.validate(workfield);
         if (validationResult.isInvalid()) {
+            eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_EDIT", "FAILURE", freelancerId,
+                    "WORKFIELD INVALID");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
         }
 
         workfieldService.editWorkfield(freelancerId, workfieldId, dto);
+        eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_EDIT", "SUCCESS", freelancerId,
+                "CATEGORY: " + workfield.getCategory() + ", DESCRIPTION: " + workfield.getDescription()
+                        + ", HOURLY_RATE: " + workfield.getHourlyRate());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping
-    public ResponseEntity<?> addWorkfield(Authentication authentication, @RequestBody Workfield workfield){
+    public ResponseEntity<?> addWorkfield(Authentication authentication, @RequestBody Workfield workfield) {
         CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
         String freelancerId = userDetails.getUser().getId();
 
         ValidationResultDto validationResult = validationService.validate(workfield);
         if (validationResult.isInvalid()) {
+            eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_CREATE", "FAILURE", freelancerId,
+                    "WORKFIELD INVALID");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
         }
 
         workfieldService.addWorkfield(freelancerId, workfield);
+        eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_CREATE", "SUCCESS", freelancerId,
+                "CATEGORY: " + workfield.getCategory() + ", DESCRIPTION: " + workfield.getDescription()
+                        + ", HOURLY_RATE: " + workfield.getHourlyRate());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @DeleteMapping("/{workfieldId}")
-    public ResponseEntity<?> deleteWorkfield(@PathVariable String workfieldId, Authentication authentication){
+    public ResponseEntity<?> deleteWorkfield(@PathVariable String workfieldId, Authentication authentication) {
         CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
         String freelancerId = userDetails.getUser().getId();
 
         workfieldService.deleteWorkfield(freelancerId, workfieldId);
+        eventLogService.logEvent("WORKFIELD", workfieldId, "WORKFIELD_DELETE", "SUCCESS", freelancerId,
+                null);
         return ResponseEntity.ok().build();
     }
 }

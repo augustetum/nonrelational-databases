@@ -21,6 +21,7 @@ import entity.Review;
 import entity.ReviewId;
 import service.CustomClientDetails;
 import service.CustomFreelancerDetails;
+import service.EventLogService;
 import service.ReviewPermissionService;
 import service.ReviewService;
 import service.ReviewValidationService;
@@ -34,6 +35,8 @@ public class ReviewController {
     private ReviewValidationService validationService;
     @Autowired
     private ReviewService reviewService;
+    @Autowired
+    private EventLogService eventLogService;
 
     @GetMapping
     public ResponseEntity<List<Review>> getByRevieweeId(Authentication authentication, String revieweeId) {
@@ -57,10 +60,11 @@ public class ReviewController {
         }
 
         // check if user allowed to add review
-        PermissionCheckResultDto permissionResult = permissionService.canAddReview(requestDto.revieweeId, userId, isClient);
-        
-        if (permissionResult.isDenied())
-        {
+        PermissionCheckResultDto permissionResult = permissionService.canAddReview(requestDto.revieweeId, userId,
+                isClient);
+
+        if (permissionResult.isDenied()) {
+            eventLogService.logEvent("REVIEW", null, "REVIEW_CREATE", "FAILURE", userId, "PERMISSION DENIED");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
 
@@ -73,11 +77,14 @@ public class ReviewController {
 
         ValidationResultDto validationResult = validationService.validate(review, false);
         if (validationResult.isInvalid()) {
+            eventLogService.logEvent("REVIEW", null, "REVIEW_CREATE", "FAILURE", userId, "REVIEW INVALID");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
-        } 
+        }
 
         // add review
         reviewService.addReview(review, isClient);
+        eventLogService.logEvent("REVIEW", review.getId().reviewId(), "REVIEW_CREATE", "SUCCESS", userId,
+                "RATING: " + review.getRating() + ", DETAILS: " + review.getDetails());
         return ResponseEntity.ok().build();
     }
 
@@ -95,10 +102,12 @@ public class ReviewController {
         }
 
         // check if user allowed to edit review
-        PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId, requestDto.reviewId, userId, isClient);
-        
-        if (permissionResult.isDenied())
-        {
+        PermissionCheckResultDto permissionResult = permissionService.canEditReview(requestDto.revieweeId,
+                requestDto.reviewId, userId, isClient);
+
+        if (permissionResult.isDenied()) {
+            eventLogService.logEvent("REVIEW", requestDto.reviewId, "REVIEW_EDIT", "FAILURE", userId,
+                    "PERMISSION DENIED");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
 
@@ -111,16 +120,21 @@ public class ReviewController {
 
         ValidationResultDto validationResult = validationService.validate(review, true);
         if (validationResult.isInvalid()) {
+            eventLogService.logEvent("REVIEW", review.getId().reviewId(), "REVIEW_EDIT", "FAILURE", userId,
+                    "REVIEW INVALID");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
-        } 
-        
+        }
+
         // edit review
         reviewService.editReview(review, isClient);
+        eventLogService.logEvent("REVIEW", review.getId().reviewId(), "REVIEW_EDIT", "SUCCESS", userId,
+                "RATING: " + review.getRating() + ", DETAILS: " + review.getDetails());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping
-    public ResponseEntity<?> removeReview(Authentication authentication, @RequestBody RemoveReviewRequestDto requestDto) {
+    public ResponseEntity<?> removeReview(Authentication authentication,
+            @RequestBody RemoveReviewRequestDto requestDto) {
         boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
 
         String userId;
@@ -133,16 +147,20 @@ public class ReviewController {
         }
 
         // check if user allowed to edit review
-        PermissionCheckResultDto permissionResult = permissionService.canDeleteReview(requestDto.revieweeId, requestDto.reviewId, userId, isClient);
+        PermissionCheckResultDto permissionResult = permissionService.canDeleteReview(requestDto.revieweeId,
+                requestDto.reviewId, userId, isClient);
 
-        if (permissionResult.isDenied())
-        {
+        if (permissionResult.isDenied()) {
+            eventLogService.logEvent("REVIEW", requestDto.reviewId, "REVIEW_DELETE", "FAILURE", userId,
+                    "PERMISSION DENIED");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(permissionResult);
         }
-        
-        // delete review     
+
+        // delete review
         ReviewId id = new ReviewId(requestDto.revieweeId, requestDto.reviewId);
         reviewService.removeReview(id, isClient);
+        eventLogService.logEvent("REVIEW", requestDto.reviewId, "REVIEW_DELETE", "SUCCESS", userId,
+                null);
         return ResponseEntity.ok().build();
     }
 }

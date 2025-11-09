@@ -1,5 +1,6 @@
 package service;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -27,5 +28,9 @@ public class EventLogService {
 
     public List<Event> getByUserId(String userId) {
         return eventLogRepository.getByUserId(userId);
+    }
+
+    public List<Event> getByDate(Instant start, Instant end) {
+        return eventLogRepository.getByDate(start, end);
     }
 }

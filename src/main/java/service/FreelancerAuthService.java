@@ -18,22 +18,25 @@ public class FreelancerAuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EventLogService eventLogService;
 
     public FreelancerAuthService(
             FreelancerRepository FreelancerRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthenticationManager authenticationManager
-    ) {
+            AuthenticationManager authenticationManager, EventLogService eventLogService) {
         this.freelancerRepository = FreelancerRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.eventLogService = eventLogService;
     }
 
     public AuthResponse register(RegisterRequest request) {
         // Check if user already exists
         if (freelancerRepository.findByEmail(request.getEmail()).isPresent()) {
+            eventLogService.logEvent("FREELANCER", null, "FREELANCER_REGISTER", "FAILURE", null,
+                    "EMAIL ALREADY REGISTERED");
             throw new RuntimeException("Email already registered");
         }
 
@@ -59,15 +62,19 @@ public class FreelancerAuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
-        var freelancer = freelancerRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        var freelancer = freelancerRepository.findByEmail(request.getEmail());
+        if (!freelancer.isPresent()) {
+            eventLogService.logEvent("FREELANCER", null, "FREELANCER_LOGIN", "FAILURE", null,
+                    "USER NOT FOUND");
+            throw new RuntimeException("User not found");
+        }
 
-        var jwtToken = jwtService.generateToken(new CustomFreelancerDetails(freelancer));
+        var presentFreelancer = freelancer.get();
 
-        return new AuthResponse(jwtToken, freelancer.getEmail());
+        var jwtToken = jwtService.generateToken(new CustomFreelancerDetails(presentFreelancer));
+
+        return new AuthResponse(jwtToken, presentFreelancer.getEmail());
     }
 }

@@ -4,12 +4,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 
 @Configuration
 public class JedisConfig {
     @Bean
     public JedisPool jedisPool() {
-        return new JedisPool( "localhost", 8090);
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        poolConfig.setJmxEnabled(false);
+        return new JedisPool(poolConfig, "localhost", 6379);
     }
 }

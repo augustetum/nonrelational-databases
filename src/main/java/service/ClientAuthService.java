@@ -18,22 +18,26 @@ public class ClientAuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final EventLogService eventLogService;
 
     public ClientAuthService(
             ClientRepository clientRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthenticationManager authenticationManager
-    ) {
+            AuthenticationManager authenticationManager,
+            EventLogService eventLogService) {
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.eventLogService = eventLogService;
     }
 
     public AuthResponse register(RegisterRequest request) {
         // Check if user already exists
         if (clientRepository.findByEmail(request.getEmail()).isPresent()) {
+            eventLogService.logEvent("CLIENT", null, "CLIENT_REGISTER", "FAILURE", null,
+                    "EMAIL ALREADY REGISTERED");
             throw new RuntimeException("Email already registered");
         }
 
@@ -59,15 +63,19 @@ public class ClientAuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
-                        request.getPassword()
-                )
-        );
+                        request.getPassword()));
 
-        var client = clientRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        var client = clientRepository.findByEmail(request.getEmail());
+        if (!client.isPresent()) {
+            eventLogService.logEvent("CLIENT", null, "CLIENT_LOGIN", "FAILURE", null,
+                    "USER NOT FOUND");
+            throw new RuntimeException("User not found");
+        }
 
-        var jwtToken = jwtService.generateToken(new CustomClientDetails(client));
+        var presentClient = client.get();
 
-        return new AuthResponse(jwtToken, client.getEmail());
+        var jwtToken = jwtService.generateToken(new CustomClientDetails(presentClient));
+
+        return new AuthResponse(jwtToken, presentClient.getEmail());
     }
 }

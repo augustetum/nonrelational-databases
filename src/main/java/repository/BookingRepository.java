@@ -12,7 +12,6 @@ import com.mongodb.client.model.Updates;
 import config.MongoDbContext;
 import entity.Booking;
 import entity.BookingStatus;
-import util.IdentifierGenerator;
 
 @Repository
 public class BookingRepository {
@@ -53,8 +52,6 @@ public class BookingRepository {
     }
 
     public void add(Booking booking) {
-        String bookingId = IdentifierGenerator.generateId();
-        booking.setId(bookingId);
 
         if (booking.getStatus() == null) {
             booking.setStatus(BookingStatus.PENDING);
@@ -73,13 +70,13 @@ public class BookingRepository {
         dbContext.bookings.updateOne(filter, updates);
     }
 
-    public void updateStatus(String bookingId, BookingStatus status){
+    public void updateStatus(String bookingId, BookingStatus status) {
         Bson filter = Filters.eq("_id", bookingId);
         Bson update = Updates.set("status", status.name());
         dbContext.bookings.updateOne(filter, update);
     }
 
-    public void delete(String bookingId){
+    public void delete(String bookingId) {
         Bson filter = Filters.eq("_id", bookingId);
         dbContext.bookings.deleteOne(filter);
     }

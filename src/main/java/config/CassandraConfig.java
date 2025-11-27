@@ -19,7 +19,7 @@ public class CassandraConfig {
     @Value("${cassandra.port:9042}")
     private int port;
 
-    @Value("${cassandra.keyspace}")
+    @Value("${cassandra.keyspace:darbsciu_rankuciu_klubas}")
     private String keyspace;
 
     @Value("${cassandra.datacenter:datacenter1}")

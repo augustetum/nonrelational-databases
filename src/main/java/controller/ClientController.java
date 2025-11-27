@@ -19,6 +19,7 @@ import entity.Client;
 import service.ClientService;
 import service.ClientValidationService;
 import service.CustomClientDetails;
+import service.EventLogService;
 
 @RestController
 @RequestMapping("/api/clients")
@@ -29,6 +30,9 @@ public class ClientController {
     @Autowired
     private ClientValidationService validationService;
 
+    @Autowired
+    private EventLogService eventLogService;
+
     @GetMapping
     public ResponseEntity<?> getClientDetails(String userId) {
         Optional<ClientDetailsDto> maybeFreelancer = clientService.getClientDetails(userId);
@@ -36,7 +40,8 @@ public class ClientController {
     }
 
     @PutMapping
-    public ResponseEntity<?> editClientDetails(Authentication authentication, @RequestBody EditClientDetailsDto clientDetailsDto){
+    public ResponseEntity<?> editClientDetails(Authentication authentication,
+            @RequestBody EditClientDetailsDto clientDetailsDto) {
         CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String clientId = userDetails.getUser().getId();
         String email = userDetails.getUser().getEmail();
@@ -52,18 +57,27 @@ public class ClientController {
         client.setPassword(password);
 
         ValidationResultDto validationResult = validationService.validate(client);
-        if(validationResult.isInvalid()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+        if (validationResult.isInvalid()) {
+            eventLogService.logEvent("CLIENT", client.getId(), "CLIENT_EDIT", "FAILURE", clientId,
+                    "DETAILS ARE INVALID");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+        }
 
         clientService.editClientDetails(clientId, client);
+        eventLogService.logEvent("CLIENT", client.getId(), "CLIENT_EDIT", "SUCCESS", clientId,
+                "FIRST_NAME: " + client.getFirstName() + ", LAST_NAME: " + client.getLastName() + ", CITY: "
+                        + client.getCity() + ", PHONE_NUMBER: " + client.getPhoneNumber());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteClient(Authentication authentication){
+    public ResponseEntity<?> deleteClient(Authentication authentication) {
         CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
         String clientId = userDetails.getUser().getId();
 
         clientService.deleteClient(clientId);
+        eventLogService.logEvent("CLIENT", clientId, "CLIENT_DELETE", "SUCCESS", clientId,
+                null);
         return ResponseEntity.ok().build();
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import dto.FreelancerDetailsDto;
 import dto.LeaderboardDetailsDto;
+import entity.Freelancer;
 import redis.clients.jedis.Jedis;
 import repository.FreelancerRepository;
 import repository.LeaderboardRepository;
@@ -21,20 +22,19 @@ public class FreelancerService {
     private final LeaderboardRepository leaderboardRepository;
 
     private final FreelancerCacheRepository freelancerCacheRepository;
-    private final LeaderboardCacheRepository leaderboardCacheRepository;   
-    
+    private final LeaderboardCacheRepository leaderboardCacheRepository;
+
     private final BookingService bookingService;
 
     public FreelancerService(
-        FreelancerRepository freelancerRepository, 
-        FreelancerCacheRepository freelancerCacheRepository, 
-        LeaderboardRepository leaderboardRepository,
-        LeaderboardCacheRepository leaderboardCacheRepository, 
-        BookingService bookingService
-    ) {
+            FreelancerRepository freelancerRepository,
+            FreelancerCacheRepository freelancerCacheRepository,
+            LeaderboardRepository leaderboardRepository,
+            LeaderboardCacheRepository leaderboardCacheRepository,
+            BookingService bookingService) {
         this.freelancerRepository = freelancerRepository;
         this.leaderboardRepository = leaderboardRepository;
-        
+
         this.freelancerCacheRepository = freelancerCacheRepository;
         this.leaderboardCacheRepository = leaderboardCacheRepository;
 
@@ -60,7 +60,7 @@ public class FreelancerService {
             return maybeDetailsDto;
         }
     }
-    
+
     public List<LeaderboardDetailsDto> getLeaderboard(int limit, int skip) {
         List<LeaderboardDetailsDto> leaderboardDetails;
 
@@ -82,11 +82,16 @@ public class FreelancerService {
 
         // return only requested items
         leaderboardDetails = leaderboardDetails.stream()
-            .skip(skip)
-            .limit(limit)
-            .collect(Collectors.toList());
-        
+                .skip(skip)
+                .limit(limit)
+                .collect(Collectors.toList());
+
         return leaderboardDetails;
+    }
+
+    public Optional<Freelancer> getByEmail(String email) {
+        Optional<Freelancer> maybeFreelancer = freelancerRepository.findByEmail(email);
+        return maybeFreelancer;
     }
 
     public List<LocalDate> getAvailableDates(String userId) {

@@ -20,7 +20,7 @@ public class Neo4JConfig {
         @Value("${neo4j.username:neo4j}")
         private String username;
 
-        @Value("${neo4j.password:password}")
+        @Value("${neo4j.password:darbsciu_rankuciu_klubas}")
         private String password;
 
         @Bean

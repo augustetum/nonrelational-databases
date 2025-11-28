@@ -10,29 +10,28 @@ import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PreDestroy;
 
+@Configuration
 public class Neo4JConfig {
-    @Configuration
-    public class Neo4jConfig {
 
-        @Value("${neo4j.uri:bolt://localhost:7687}")
-        private String uri;
+    Driver driver;
 
-        @Value("${neo4j.username:neo4j}")
-        private String username;
+    @Value("${neo4j.uri:bolt://172.30.250.182:7687}")
+    private String uri;
 
-        @Value("${neo4j.password:darbsciu_rankuciu_klubas}")
-        private String password;
+    @Value("${neo4j.username:neo4j}")
+    private String username;
 
-        @Bean
-        public Driver neo4jDriver() {
-            return GraphDatabase.driver(uri,
-                    AuthTokens.basic(username, password));
-        }
+    @Value("${neo4j.password:darbsciu_rankuciu_klubas}")
+    private String password;
 
-        @PreDestroy
-        public void closeDriver(@Autowired Driver driver) {
-            driver.close();
-        }
+    @Bean
+    public Driver neo4jDriver() {
+        return GraphDatabase.driver(uri,
+                AuthTokens.basic(username, password));
     }
 
+    @PreDestroy
+    public void closeDriver() {
+        driver.close();
+    }
 }

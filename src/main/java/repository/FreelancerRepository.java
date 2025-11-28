@@ -40,33 +40,38 @@ public class FreelancerRepository {
         return maybeFreelancer;
     }
 
+    public Optional<Freelancer> findById(String id) {
+        Optional<Freelancer> maybeFreelancer = collection.find()
+                .into(new ArrayList<Document>())
+                .stream()
+                .map(this::convertDocumentToFreelancer)
+                .toList().stream()
+                .filter(freelancer -> freelancer.getId().equals(id))
+                .findFirst();
+        return maybeFreelancer;
+    }
 
     public Optional<FreelancerDetailsDto> getDetails(String freelancerId) {
         List<Bson> pipeline = Arrays.asList(
-            Aggregates.match(Filters.eq("_id", freelancerId)),
-            Aggregates.lookup("bookings", "_id", "freelancerId", "completedBookings"),
-            Aggregates.project(Projections.fields(
-                Projections.computed("averageRating",
-                    new Document("$ifNull", Arrays.asList(
-                        new Document("$avg", "$reviews.rating"),
-                        null
-                    ))
-                ),
-                Projections.computed("jobsCompleted",
-                    new Document("$size",
-                        new Document("$filter", new Document()
-                            .append("input", "$completedBookings")
-                            .append("as", "booking")
-                            .append("cond", new Document("$eq", Arrays.asList("$$booking.status", "COMPLETED")))
-                        )
-                    )
-                ),
-                Projections.include("firstName", "lastName", "city", "email", "phoneNumber")
-            ))
-        );
+                Aggregates.match(Filters.eq("_id", freelancerId)),
+                Aggregates.lookup("bookings", "_id", "freelancerId", "completedBookings"),
+                Aggregates.project(Projections.fields(
+                        Projections.computed("averageRating",
+                                new Document("$ifNull", Arrays.asList(
+                                        new Document("$avg", "$reviews.rating"),
+                                        null))),
+                        Projections.computed("jobsCompleted",
+                                new Document("$size",
+                                        new Document("$filter", new Document()
+                                                .append("input", "$completedBookings")
+                                                .append("as", "booking")
+                                                .append("cond",
+                                                        new Document("$eq",
+                                                                Arrays.asList("$$booking.status", "COMPLETED")))))),
+                        Projections.include("firstName", "lastName", "city", "email", "phoneNumber"))));
 
         List<Document> documents = collection.aggregate(pipeline)
-            .into(new ArrayList<>());
+                .into(new ArrayList<>());
 
         if (documents.isEmpty()) {
             return Optional.empty();
@@ -118,7 +123,7 @@ public class FreelancerRepository {
         if (ratingDecimal != null) {
             rating = ratingDecimal.bigDecimalValue().setScale(2, RoundingMode.HALF_UP);
         }
-        
+
         freelancerDetails.setRating(rating);
 
         long phoneNumber = document.getLong("phoneNumber");

@@ -22,6 +22,8 @@ public class Neo4JConfig {
     @Value("${neo4j.password:darbsciu_rankuciu_klubas}")
     private String password;
 
+    private Driver driver;
+
     @Bean
     public Driver neo4jDriver() {
         return GraphDatabase.driver(uri,
@@ -29,7 +31,8 @@ public class Neo4JConfig {
     }
 
     @PreDestroy
-    public void closeDriver(@Autowired Driver driver) {
-        driver.close();
+    public void closeDriver() {
+        if (driver != null)
+            driver.close();
     }
 }

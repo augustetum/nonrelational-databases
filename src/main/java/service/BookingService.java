@@ -4,13 +4,11 @@ import entity.Booking;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import entity.BookingStatus;
-import entity.Freelancer;
 import repository.BookingRepository;
 import repository.FreelancerRepository;
+import repository.Neo4JRepository;
 import repository.cache.FreelancerCacheRepository;
 
-import org.neo4j.driver.Session;
-import org.neo4j.driver.Driver;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,35 +17,32 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class BookingService {
     private final BookingRepository repository;
     private final FreelancerCacheRepository freelancerCacheRepository;
-    private final FreelancerRepository freelancerRepository;
     private final EventLogService eventLogService;
 
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
 
-    private final Driver neo4jDriver;
+    private final Neo4JRepository neo4JRepo;
 
     private static final int RESERVATION_TTL_SECONDS = 600;
 
     public BookingService(BookingRepository repository, FreelancerCacheRepository freelancerCacheRepository,
-            JedisPool jedisPool, ObjectMapper objectMapper, EventLogService eventLogService, Driver neo4JDriver,
+            JedisPool jedisPool, ObjectMapper objectMapper, EventLogService eventLogService,
+            Neo4JRepository neo4JRepo,
             FreelancerRepository freelancerRepository) {
         this.repository = repository;
-        this.freelancerRepository = freelancerRepository;
         this.jedisPool = jedisPool;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.eventLogService = eventLogService;
-        this.neo4jDriver = neo4JDriver;
+        this.neo4JRepo = neo4JRepo;
 
         this.freelancerCacheRepository = freelancerCacheRepository;
     }
@@ -141,34 +136,8 @@ public class BookingService {
                     booking.getTime());
 
             jedis.del(reservationKey, dateKey);
-            try (Session session = neo4jDriver.session()) {
-                session.executeWrite(tx -> {
-                    Freelancer freelancer = freelancerRepository.findById(booking.getFreelancerId())
-                            .orElseThrow(() -> new RuntimeException("Freelancer not found"));
 
-                    String city = freelancer.getCity();
-                    if (city == null) {
-                        city = "Nenurodyta";
-                    }
-
-                    LocalDate date = booking.getTime().toInstant()
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate();
-
-                    Map<String, Object> params = new HashMap<>();
-                    params.put("bookingId", bookingId);
-                    params.put("date", date);
-                    params.put("city", city);
-                    params.put("client", booking.getClientId());
-                    params.put("freelancer", booking.getFreelancerId());
-                    params.put("status", booking.getStatus());
-
-                    tx.run("CREATE (b:Booking {bookingId: $bookingId, date: $date, city: $city, client: $client, freelancer: $freelancer, status: $status})",
-                            params);
-                    return null;
-                });
-            }
-
+            neo4JRepo.addBooking(booking);
             repository.add(booking);
         }
 

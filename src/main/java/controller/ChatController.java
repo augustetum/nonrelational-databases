@@ -2,7 +2,6 @@ package controller;
 
 import entity.Message;
 
-import org.apache.catalina.connector.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -23,7 +22,7 @@ import service.CustomFreelancerDetails;
 
 import java.util.List;
 
-@CrossOrigin(origins = "*") 
+@CrossOrigin(origins = "*")
 @Controller
 public class ChatController {
     private final ChatService chatService;
@@ -39,7 +38,7 @@ public class ChatController {
             System.err.println("Username not found in session!");
             return;
         }
-        
+
         // TODO: where the fuck username comes from
         chatService.sendPrivateMessage(message.getConversationId(), username, message.getContent());
     }
@@ -47,7 +46,7 @@ public class ChatController {
     @GetMapping("/api/chat/history/{conversationId}")
     public ResponseEntity<?> getConversationHistory(@PathVariable String conversationId) {
         List<Message> result = chatService.getConversationHistory(conversationId);
-        
+
         if (result == null) {
             return ResponseEntity.notFound().build();
         }
@@ -62,28 +61,26 @@ public class ChatController {
     }
 
     @PostMapping("/api/chat")
-    public ResponseEntity<?> addConversation(Authentication authentication, @RequestBody CreateConversationRequestDto newConversationDto) {
+    public ResponseEntity<?> addConversation(Authentication authentication,
+            @RequestBody CreateConversationRequestDto newConversationDto) {
         boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
 
         String userId;
         if (isClient) {
             CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
             userId = userDetails.getUser().getId();
-        } 
-        else {
+        } else {
             CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
             userId = userDetails.getUser().getId();
         }
 
         String recipientId = newConversationDto.getRecipientId();
         if (isClient) {
-            chatService.createConversation(recipientId, userId);   
-        } 
-        else {
-            chatService.createConversation(userId, recipientId);    
+            chatService.createConversation(recipientId, userId);
+        } else {
+            chatService.createConversation(userId, recipientId);
         }
 
         return ResponseEntity.ok().build();
     }
 }
-

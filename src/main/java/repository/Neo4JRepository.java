@@ -28,12 +28,12 @@ public class Neo4JRepository {
                         .toLocalDate();
 
                 Map<String, Object> params = new HashMap<>();
-                params.put("skillId", booking.getSkillId());
+                params.put("workfieldId", booking.getWorkfieldId());
                 params.put("bookingId", booking.getId());
                 params.put("date", date);
                 params.put("clientId", booking.getClientId());
 
-                tx.run("CREATE (s:Skill {skillId: $skillId})<-[:REQUIRES]-(b:Booking {bookingId: $bookingId, date: $date})<-[:CREATED]-(c:Client {clientId: $clientId})",
+                tx.run("CREATE (w:Workfield {workfieldId: $workfieldId})<-[:REQUIRES]-(b:Booking {bookingId: $bookingId, date: $date})<-[:CREATED]-(c:Client {clientId: $clientId})",
                         params);
                 return null;
             });

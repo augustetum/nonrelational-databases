@@ -113,6 +113,7 @@ public class BookingController {
         booking.setId(IdentifierGenerator.generateId());
         booking.setTime(bookingRequest.getTime());
         booking.setAddress(bookingRequest.getAddress());
+        booking.setWorkfieldId(bookingRequest.getWorkfieldId());
         booking.setDetails(bookingRequest.getDetails());
         booking.setClientId(clientId);
         booking.setFreelancerId(freelancerId);

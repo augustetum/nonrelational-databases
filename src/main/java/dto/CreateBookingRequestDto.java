@@ -13,4 +13,5 @@ public class CreateBookingRequestDto {
     private String address;
     private String details;
     private String freelancerId;
+    private String workfieldId;
 }

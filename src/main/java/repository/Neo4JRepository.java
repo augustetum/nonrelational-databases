@@ -7,10 +7,12 @@ import java.util.Map;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
+import org.springframework.stereotype.Repository;
 
 import entity.Booking;
 import entity.Client;
 
+@Repository
 public class Neo4JRepository {
 
     private final Driver driver;

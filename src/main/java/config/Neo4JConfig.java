@@ -12,7 +12,7 @@ import jakarta.annotation.PreDestroy;
 @Configuration
 public class Neo4JConfig {
 
-    @Value("${neo4j.uri:bolt://localhost:7687}")
+    @Value("${neo4j.uri:neo4j://localhost:7687}")
     private String uri;
 
     @Value("${neo4j.username:neo4j}")
@@ -25,8 +25,7 @@ public class Neo4JConfig {
 
     @Bean
     public Driver neo4jDriver() {
-        return GraphDatabase.driver(uri,
-                AuthTokens.basic(username, password));
+        return GraphDatabase.driver(uri, AuthTokens.basic(username, password));
     }
 
     @PreDestroy

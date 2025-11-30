@@ -38,11 +38,11 @@ public class WorkfieldValidationService {
         if (category == null) {
             return ValidationResultDto.invalid("Workfield category can't be null.");
         }
-        if (category.getId() == null || category.getId().isBlank()) {
+        if (category.getCategoryId() == null || category.getCategoryId().isBlank()) {
             return ValidationResultDto.invalid("Workfield category ID can't be empty.");
         }
-        if (!categoryService.categoryExists(category.getId())) {
-            return ValidationResultDto.invalid("Category with ID '" + category.getId() + "' does not exist.");
+        if (!categoryService.categoryExists(category.getCategoryId())) {
+            return ValidationResultDto.invalid("Category with ID '" + category.getCategoryId() + "' does not exist.");
         }
         return ValidationResultDto.valid();
     }

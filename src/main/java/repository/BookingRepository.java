@@ -87,6 +87,7 @@ public class BookingRepository {
         booking.setId(document.getString("_id"));
         booking.setTime(document.getDate("time"));
         booking.setAddress(document.getString("address"));
+        booking.setWorkfieldId(document.getString("workfieldId"));
         booking.setDetails(document.getString("details"));
         booking.setClientId(document.getString("clientId"));
         booking.setFreelancerId(document.getString("freelancerId"));
@@ -102,6 +103,7 @@ public class BookingRepository {
         document.append("_id", booking.getId());
         document.append("time", booking.getTime());
         document.append("address", booking.getAddress());
+        document.append("workfieldId", booking.getWorkfieldId());
         document.append("details", booking.getDetails());
         document.append("clientId", booking.getClientId());
         document.append("freelancerId", booking.getFreelancerId());

@@ -5,6 +5,8 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import entity.BookingStatus;
 import repository.BookingRepository;
+import repository.FreelancerRepository;
+import repository.Neo4JRepository;
 import repository.cache.FreelancerCacheRepository;
 
 import org.springframework.stereotype.Service;
@@ -27,15 +29,20 @@ public class BookingService {
     private final JedisPool jedisPool;
     private final ObjectMapper objectMapper;
 
+    private final Neo4JRepository neo4JRepo;
+
     private static final int RESERVATION_TTL_SECONDS = 600;
 
     public BookingService(BookingRepository repository, FreelancerCacheRepository freelancerCacheRepository,
-            JedisPool jedisPool, ObjectMapper objectMapper, EventLogService eventLogService) {
+            JedisPool jedisPool, ObjectMapper objectMapper, EventLogService eventLogService,
+            Neo4JRepository neo4JRepo,
+            FreelancerRepository freelancerRepository) {
         this.repository = repository;
         this.jedisPool = jedisPool;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.eventLogService = eventLogService;
+        this.neo4JRepo = neo4JRepo;
 
         this.freelancerCacheRepository = freelancerCacheRepository;
     }
@@ -73,6 +80,7 @@ public class BookingService {
 
             String reservationKey = buildReservationKey(booking.getId());
             String reservationJson = objectMapper.writeValueAsString(booking);
+            System.out.println("set " + reservationKey);
 
             jedis.watch(dateKey);
             var transaction = jedis.multi();
@@ -80,7 +88,9 @@ public class BookingService {
             transaction.setex(dateKey, RESERVATION_TTL_SECONDS, booking.getClientId());
             transaction.exec();
 
-            return booking;
+            if (booking != null)
+                return booking;
+            return new Booking();
         } catch (Exception e) {
             eventLogService.logEvent("BOOKING", booking.getId(), "BOOKING_CREATE", "FAILURE",
                     booking.getClientId(), null);
@@ -91,6 +101,7 @@ public class BookingService {
     public Booking getReservation(String bookingId) {
         try (Jedis jedis = jedisPool.getResource()) {
             String key = buildReservationKey(bookingId);
+            System.out.println("trying to get: " + key);
             String json = jedis.get(key);
 
             if (json == null) {
@@ -115,7 +126,8 @@ public class BookingService {
             Booking booking = getReservation(bookingId);
 
             if (booking == null) {
-                eventLogService.logEvent("BOOKING", bookingId, "BOOKING_CONFIRM", "FAILURE", null, "BOOKING NOT FOUND");
+                eventLogService.logEvent("BOOKING", bookingId, "BOOKING_CONFIRM", "FAILURE", "none",
+                        "BOOKING NOT FOUND");
                 throw new IllegalStateException("Reservation not found or expired");
             }
 
@@ -125,8 +137,10 @@ public class BookingService {
 
             jedis.del(reservationKey, dateKey);
 
+            neo4JRepo.addBooking(booking);
             repository.add(booking);
         }
+
     }
 
     public void cancelReservation(String bookingId) {

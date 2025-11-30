@@ -13,6 +13,7 @@ public class Booking {
     private Date time;
     private String address;
     private String details;
+    private String workfieldId;
     private String clientId;
     private String freelancerId;
     private BookingStatus status;

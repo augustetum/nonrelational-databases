@@ -6,6 +6,7 @@ import dto.AuthResponse;
 import dto.RegisterRequest;
 import entity.Client;
 import repository.ClientRepository;
+import repository.Neo4JRepository;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,18 +20,21 @@ public class ClientAuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final EventLogService eventLogService;
+    private final Neo4JRepository neo4jRepository;
 
     public ClientAuthService(
             ClientRepository clientRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             AuthenticationManager authenticationManager,
-            EventLogService eventLogService) {
+            EventLogService eventLogService,
+            Neo4JRepository neo4jRepository) {
         this.clientRepository = clientRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.eventLogService = eventLogService;
+        this.neo4jRepository = neo4jRepository;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -52,6 +56,7 @@ public class ClientAuthService {
                 .build();
 
         clientRepository.add(client);
+        neo4jRepository.addClient(client);
 
         // Generate JWT token
         var jwtToken = jwtService.generateToken(new CustomClientDetails(client));

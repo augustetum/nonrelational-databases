@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import entity.Review;
 import entity.Workfield;
 import entity.Freelancer;
@@ -81,6 +83,35 @@ public class FreelancerRepository {
         FreelancerDetailsDto freelancerDetails = convertDocumentToFreelancerDetails(document);
 
         return Optional.of(freelancerDetails);
+    }
+
+    public List<FreelancerDetailsDto> getDetails(List<String> freelancerIds) {
+        List<Bson> pipeline = Arrays.asList(
+                Aggregates.match(Filters.in("_id", freelancerIds)),
+                Aggregates.lookup("bookings", "_id", "freelancerId", "completedBookings"),
+                Aggregates.project(Projections.fields(
+                        Projections.computed("averageRating",
+                                new Document("$ifNull", Arrays.asList(
+                                        new Document("$avg", "$reviews.rating"),
+                                        null))),
+                        Projections.computed("jobsCompleted",
+                                new Document("$size",
+                                        new Document("$filter", new Document()
+                                                .append("input", "$completedBookings")
+                                                .append("as", "booking")
+                                                .append("cond",
+                                                        new Document("$eq",
+                                                                Arrays.asList("$$booking.status", "COMPLETED")))))),
+                        Projections.include("firstName", "lastName", "city", "email", "phoneNumber")
+                ))
+        );
+
+        List<Document> documents = collection.aggregate(pipeline)
+                .into(new ArrayList<>());
+
+        return documents.stream()
+                .map(this::convertDocumentToFreelancerDetails)
+                .collect(Collectors.toList());
     }
 
     public void add(Freelancer freelancer) {

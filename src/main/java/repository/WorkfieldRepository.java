@@ -80,7 +80,7 @@ public class WorkfieldRepository {
 
         Bson filter = Filters.eq("_id", freelancerId);
         Bson update = new Document("$push", new Document("workfields", workfieldDoc));
-        neo4JRepository.addWorkfieldForFreelancer(freelancerId, workfield.getCategory());
+        neo4JRepository.addWorkfieldForFreelancer(freelancerId, workfield.getCategory().getCategoryId());
         collection.updateOne(filter, update);
     }
 

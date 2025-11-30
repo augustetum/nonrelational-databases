@@ -18,17 +18,20 @@ import java.util.stream.Stream;
 @Repository
 public class WorkfieldRepository {
     private final MongoCollection<Document> collection;
+    private final Neo4JRepository neo4JRepository;
 
-    public WorkfieldRepository(MongoDbContext dbContext){this.collection = dbContext.freelancers; }
+    public WorkfieldRepository(MongoDbContext dbContext, Neo4JRepository neo4JRepository) {
+        this.collection = dbContext.freelancers;
+        this.neo4JRepository = neo4JRepository;
+    }
 
     public List<Workfield> getAllWorkfields() {
-        List<Document> allFreelancers = collection.find().into(new ArrayList<>()); //visi freelanceriai
+        List<Document> allFreelancers = collection.find().into(new ArrayList<>()); // visi freelanceriai
 
-        return allFreelancers.stream() //list'a convertina i stream
+        return allFreelancers.stream() // list'a convertina i stream
                 .flatMap(freelancerDoc -> {
                     List<Document> workfieldDocs = freelancerDoc.getList("workfields", Document.class);
-                    return workfieldDocs == null ?
-                            Stream.<Document>of() : workfieldDocs.stream();
+                    return workfieldDocs == null ? Stream.<Document>of() : workfieldDocs.stream();
                 })
                 .map(this::convertDocumentToWorkfield)
                 .toList();
@@ -36,10 +39,10 @@ public class WorkfieldRepository {
 
     public List<Workfield> getWorkfieldsByFreelancerId(String freelancerId) {
         Bson filter = Filters.eq("_id", freelancerId);
-        Document freelancerDoc = collection.find(filter).first(); //nes tik vieno freelancer reikia
+        Document freelancerDoc = collection.find(filter).first(); // nes tik vieno freelancer reikia
         if (freelancerDoc == null) {
             return new ArrayList<>();
-        } //jei tuščias
+        } // jei tuščias
         List<Document> workfields = freelancerDoc.getList("workfields", Document.class);
         if (workfields == null) {
             return new ArrayList<>();
@@ -56,9 +59,7 @@ public class WorkfieldRepository {
         return freelancerDocs.stream()
                 .flatMap(freelancerDoc -> {
                     List<Document> workfieldDocs = freelancerDoc.getList("workfields", Document.class);
-                    return workfieldDocs == null ?
-                            Stream.<Document>of() :
-                            workfieldDocs.stream();
+                    return workfieldDocs == null ? Stream.<Document>of() : workfieldDocs.stream();
                 })
                 .map(this::convertDocumentToWorkfield)
                 .filter(workfield -> category.equals(workfield.getCategory()))
@@ -73,31 +74,30 @@ public class WorkfieldRepository {
                 .toList();
     }
 
-    public void addWorkfield(String freelancerId, Workfield workfield){
+    public void addWorkfield(String freelancerId, Workfield workfield) {
         workfield.setId(IdentifierGenerator.generateId());
         Document workfieldDoc = convertWorkfieldToDocument(workfield);
 
         Bson filter = Filters.eq("_id", freelancerId);
         Bson update = new Document("$push", new Document("workfields", workfieldDoc));
+        neo4JRepository.addWorkfieldForFreelancer(freelancerId, workfield.getCategory());
         collection.updateOne(filter, update);
     }
 
-    public void editWorkfield(String freelancerId, String workfieldId, EditWorkfieldDto dto){
+    public void editWorkfield(String freelancerId, String workfieldId, EditWorkfieldDto dto) {
         Bson filter = Filters.and(
                 Filters.eq("_id", freelancerId),
-                Filters.eq("workfields.id", workfieldId)
-        );
+                Filters.eq("workfields.id", workfieldId));
 
         Bson update = new Document("$set", new Document()
                 .append("workfields.$.category", dto.getCategory().getCategoryId())
                 .append("workfields.$.description", dto.getDescription())
-                .append("workfields.$.hourlyRate", dto.getHourlyRate())
-        );
+                .append("workfields.$.hourlyRate", dto.getHourlyRate()));
 
         collection.updateOne(filter, update);
     }
 
-    public void deleteWorkfield(String freelancerId, String workfieldId){
+    public void deleteWorkfield(String freelancerId, String workfieldId) {
         Bson filter = Filters.eq("_id", freelancerId);
         Bson update = new Document("$pull", new Document("workfields", new Document("id", workfieldId)));
         collection.updateOne(filter, update);

@@ -6,6 +6,7 @@ import dto.AuthResponse;
 import dto.RegisterRequest;
 import entity.Freelancer;
 import repository.FreelancerRepository;
+import repository.Neo4JRepository;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,17 +20,20 @@ public class FreelancerAuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final EventLogService eventLogService;
+    private final Neo4JRepository neo4JRepository;
 
     public FreelancerAuthService(
             FreelancerRepository FreelancerRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
-            AuthenticationManager authenticationManager, EventLogService eventLogService) {
+            AuthenticationManager authenticationManager, EventLogService eventLogService,
+            Neo4JRepository neo4JRepository) {
         this.freelancerRepository = FreelancerRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.eventLogService = eventLogService;
+        this.neo4JRepository = neo4JRepository;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -51,6 +55,7 @@ public class FreelancerAuthService {
                 .build();
 
         freelancerRepository.add(freelancer);
+        neo4JRepository.addFreelancer(freelancer);
 
         // Generate JWT token
         var jwtToken = jwtService.generateToken(new CustomFreelancerDetails(freelancer));

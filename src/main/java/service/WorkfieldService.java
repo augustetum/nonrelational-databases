@@ -1,6 +1,7 @@
 package service;
 
 import dto.EditWorkfieldDto;
+import dto.ValidationResultDto;
 import entity.Workfield;
 import entity.WorkfieldCategory;
 import org.springframework.stereotype.Service;
@@ -11,9 +12,11 @@ import java.util.List;
 @Service
 public class WorkfieldService {
     private final WorkfieldRepository workfieldRepository;
+    private final WorkfieldValidationService validationService;
 
-    public WorkfieldService(WorkfieldRepository workfieldRepository) {
+    public WorkfieldService(WorkfieldRepository workfieldRepository, WorkfieldValidationService validationService) {
         this.workfieldRepository = workfieldRepository;
+        this.validationService = validationService;
     }
 
     public List<Workfield> getAllWorkfields(){
@@ -33,6 +36,10 @@ public class WorkfieldService {
     }
 
     public void addWorkfield(String freelancerId, Workfield workfield){
+        ValidationResultDto validationResult = validationService.validate(workfield);
+        if (validationResult.isInvalid()) {
+            throw new IllegalArgumentException(validationResult.getMessage());
+        }
         workfieldRepository.addWorkfield(freelancerId, workfield);
     }
 

@@ -17,6 +17,7 @@ public class MongoDbContext {
     public final MongoCollection<Document> bookings;
     public final MongoCollection<Document> clients;
     public final MongoCollection<Document> freelancers;
+    public final MongoCollection<Document> workfieldCategories;
 
     public MongoDbContext(@Value("${spring.data.mongodb.uri}") String uri, @Value("${spring.data.mongodb.database}") String dbName) {
         this.client = MongoClients.create(uri);
@@ -25,6 +26,7 @@ public class MongoDbContext {
         this.bookings = database.getCollection("bookings");
         this.clients = database.getCollection("clients");
         this.freelancers = database.getCollection("freelancers");
+        this.workfieldCategories = database.getCollection("workfield_categories");
     }
 
     @PreDestroy

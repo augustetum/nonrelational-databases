@@ -1,6 +1,5 @@
 package service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -19,14 +18,13 @@ public class RecommendationService {
         this.freelancerRepository = freelancerRepository;
     }
 
-    public List<FreelancerDetailsDto> getRecommendationsBySkill(String clientId) {
-        // List<String> freelancerIds = recommendationRepository.getBySkill(clientId);
-        
-        List<String> freelancerIds = new ArrayList<>();
-        freelancerIds.add("68ee7ec61c6318f81772862d");
-        freelancerIds.add("68ee7f271c6318f81772862e");
-        freelancerIds.add("68ee7f541c6318f81772862f");
+    public List<FreelancerDetailsDto> getRecommendationsByWorkfieldCategory(String clientId) {
+        List<String> freelancerIds = recommendationRepository.getByWorkfieldCategory(clientId, 5);
+        return freelancerRepository.getDetails(freelancerIds);
+    }
 
+    public List<FreelancerDetailsDto> getRecommendationsBySimilarClients(String clientId) {
+        List<String> freelancerIds = recommendationRepository.getBySimilarClients(clientId, 5);
         return freelancerRepository.getDetails(freelancerIds);
     }
 }

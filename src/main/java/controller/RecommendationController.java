@@ -20,8 +20,8 @@ public class RecommendationController {
     @Autowired
     private RecommendationService recommendationService;
     
-    @GetMapping
-    public ResponseEntity<?> getRecommendationsBySkill(Authentication authentication) {
+    @GetMapping("/byWorkfieldCategory")
+    public ResponseEntity<?> getRecommendationsByWorkfieldCategory(Authentication authentication) {
         boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
 
         String userId;
@@ -33,7 +33,24 @@ public class RecommendationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Freelancers shouldn't be able to call this endpoint");
         }
 
-        List<FreelancerDetailsDto> recommendations = recommendationService.getRecommendationsBySkill(userId);
+        List<FreelancerDetailsDto> recommendations = recommendationService.getRecommendationsByWorkfieldCategory(userId);
+        return ResponseEntity.ok(recommendations);
+    }
+
+    @GetMapping("/bySimilarClients")
+    public ResponseEntity<?> getRecommendationsBySimilarClients(Authentication authentication) {
+        boolean isClient = authentication.getPrincipal() instanceof CustomClientDetails;
+
+        String userId;
+        if (isClient) {
+            CustomClientDetails userDetails = (CustomClientDetails) authentication.getPrincipal();
+            userId = userDetails.getUser().getId();
+        } 
+        else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Freelancers shouldn't be able to call this endpoint");
+        }
+
+        List<FreelancerDetailsDto> recommendations = recommendationService.getRecommendationsBySimilarClients(userId);
         return ResponseEntity.ok(recommendations);
     }
 }

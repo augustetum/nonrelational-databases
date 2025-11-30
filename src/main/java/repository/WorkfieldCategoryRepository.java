@@ -25,7 +25,7 @@ public class WorkfieldCategoryRepository {
 
     public WorkfieldCategoryRepository(MongoDbContext dbContext, Driver driver) {
         this.collection = dbContext.workfieldCategories;
-        this.driver = driver;        
+        this.driver = driver;      
 
         this.insertWorkfieldCategoryNeo = 
             """

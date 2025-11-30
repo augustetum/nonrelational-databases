@@ -13,6 +13,7 @@ public class WorkfieldCategoryService {
     }
 
     public void addCategory(WorkfieldCategory category) {
+        // TODO: resolve
         if (categoryRepository.existsByName(category.getName())) {
             throw new IllegalArgumentException("Category with name '" + category.getName() + "' already exists.");
         }

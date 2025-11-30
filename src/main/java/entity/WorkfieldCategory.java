@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class WorkfieldCategory {
-    String id;
+    String categoryId;
+    String parentId;
     String name;
 }

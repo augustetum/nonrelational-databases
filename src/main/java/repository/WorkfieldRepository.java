@@ -50,7 +50,7 @@ public class WorkfieldRepository {
     }
 
     public List<Workfield> getAllWorkfieldsByCategory(WorkfieldCategory category) {
-        Bson filter = Filters.eq("workfields.category", category.getId());
+        Bson filter = Filters.eq("workfields.category", category.getCategoryId());
         List<Document> freelancerDocs = collection.find(filter).into(new ArrayList<>());
 
         return freelancerDocs.stream()
@@ -89,7 +89,7 @@ public class WorkfieldRepository {
         );
 
         Bson update = new Document("$set", new Document()
-                .append("workfields.$.category", dto.getCategory().getId())
+                .append("workfields.$.category", dto.getCategory().getCategoryId())
                 .append("workfields.$.description", dto.getDescription())
                 .append("workfields.$.hourlyRate", dto.getHourlyRate())
         );
@@ -106,7 +106,7 @@ public class WorkfieldRepository {
     private Document convertWorkfieldToDocument(Workfield workfield) {
         return new Document()
                 .append("id", workfield.getId())
-                .append("category", workfield.getCategory().getId())
+                .append("categoryId", workfield.getCategory().getCategoryId())
                 .append("description", workfield.getDescription())
                 .append("hourlyRate", workfield.getHourlyRate());
     }
@@ -116,7 +116,8 @@ public class WorkfieldRepository {
         workfield.setId(doc.getString("id"));
 
         WorkfieldCategory category = new WorkfieldCategory();
-        category.setId(doc.getString("category"));
+        category.setCategoryId(doc.getString("categoryId"));
+        category.setParentId(doc.getString("parentId"));
         workfield.setCategory(category);
 
         workfield.setDescription(doc.getString("description"));

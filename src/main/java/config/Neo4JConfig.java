@@ -12,7 +12,7 @@ import jakarta.annotation.PreDestroy;
 @Configuration
 public class Neo4JConfig {
 
-    @Value("${neo4j.uri:neo4j://localhost:7687}")
+    @Value("${neo4j.uri:bolt://172.30.250.182:7687}")
     private String uri;
 
     @Value("${neo4j.username:neo4j}")

@@ -80,11 +80,11 @@ public class Neo4JRepository {
                     match (freelancer:Freelancer { freelancerId:$freelancerId })
                     match (category:WorkfieldCategory { id:$workfieldId })
                     with freelancer, category
-                    create (freelancer) -[:CAN DO]-> (category)
+                    create (freelancer) -[:CAN_DO]-> (category)
                 """;
 
         Map<String, Object> params = new HashMap<>();
-        params.put("category", workfieldId);
+        params.put("workfieldId", workfieldId);
         params.put("freelancerId", freelancerId);
 
         try (Session session = driver.session()) {

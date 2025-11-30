@@ -10,6 +10,12 @@ import java.util.function.Function;
 
 @Service
 public class WorkfieldValidationService {
+    private final WorkfieldCategoryService categoryService;
+
+    public WorkfieldValidationService(WorkfieldCategoryService categoryService) {
+        this.categoryService = categoryService;
+    }
+
     public ValidationResultDto validate(Workfield workfield) {
         if (workfield == null) {
             return ValidationResultDto.invalid("Workfield can't be null.");
@@ -31,6 +37,12 @@ public class WorkfieldValidationService {
     private ValidationResultDto validateCategory(WorkfieldCategory category) {
         if (category == null) {
             return ValidationResultDto.invalid("Workfield category can't be null.");
+        }
+        if (category.getId() == null || category.getId().isBlank()) {
+            return ValidationResultDto.invalid("Workfield category ID can't be empty.");
+        }
+        if (!categoryService.categoryExists(category.getId())) {
+            return ValidationResultDto.invalid("Category with ID '" + category.getId() + "' does not exist.");
         }
         return ValidationResultDto.valid();
     }

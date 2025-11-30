@@ -22,23 +22,27 @@ public class Neo4JRepository {
     }
 
     public void addBooking(Booking booking) {
+        String statement = 
+            """
+                match (client:Client { clientId:$clientId })
+                match (category:WorkfieldCategory { id:$workfieldId })
+                with client, category
+                create (client) -[:CREATED]-> (:Booking { bookingId:$bookingId, date:$date}) -[:REQUIRES]-> (category)
+            """;
+
+        // map paramenters
+        Map<String, Object> params = new HashMap<>();
+        params.put("workfieldId", booking.getWorkfieldId());
+        params.put("bookingId", booking.getId());
+
+        LocalDate date = booking.getTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        params.put("date", date);
+        
+        params.put("clientId", booking.getClientId());
+
+        // execute statement
         try (Session session = driver.session()) {
-            session.executeWrite(tx -> {
-
-                LocalDate date = booking.getTime().toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate();
-
-                Map<String, Object> params = new HashMap<>();
-                params.put("workfieldId", booking.getWorkfieldId());
-                params.put("bookingId", booking.getId());
-                params.put("date", date);
-                params.put("clientId", booking.getClientId());
-
-                tx.run("CREATE (w:Workfield {workfieldId: $workfieldId})<-[:REQUIRES]-(b:Booking {bookingId: $bookingId, date: $date})<-[:CREATED]-(c:Client {clientId: $clientId})",
-                        params);
-                return null;
-            });
+            session.run(statement, params);
         }
     }
 

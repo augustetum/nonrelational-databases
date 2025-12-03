@@ -1,6 +1,9 @@
 package service;
 
 import entity.WorkfieldCategory;
+
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import repository.WorkfieldCategoryRepository;
 
@@ -12,11 +15,15 @@ public class WorkfieldCategoryService {
         this.categoryRepository = categoryRepository;
     }
 
-    public void addCategory(WorkfieldCategory category) {
-        // TODO: resolve
-        if (categoryRepository.existsByName(category.getName())) {
-            throw new IllegalArgumentException("Category with name '" + category.getName() + "' already exists.");
+    public List<WorkfieldCategory> getAncestry(String categoryId) {
+        return  categoryRepository.getAncestry(categoryId);
+    }
+
+    public void addWorkfieldCategory(WorkfieldCategory category) {
+        if (categoryRepository.isDirectChildOf(category.getName(), category.getParentId())) {
+            throw new IllegalArgumentException("Category with name '" + category.getName() + "' already exists in this path.");
         }
+
         categoryRepository.add(category);
     }
 
@@ -25,6 +32,6 @@ public class WorkfieldCategoryService {
     }
 
     public WorkfieldCategory getCategoryById(String categoryId) {
-        return categoryRepository.findById(categoryId);
+        return categoryRepository.getById(categoryId);
     }
 }

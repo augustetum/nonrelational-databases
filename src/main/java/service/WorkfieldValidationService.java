@@ -22,7 +22,7 @@ public class WorkfieldValidationService {
         }
 
         List<Function<Workfield, ValidationResultDto>> validators = List.of(
-                w -> validateCategory(w.getCategory()),
+                // w -> validateCategory(w.getCategory()),
                 w -> validateDescription(w.getDescription()),
                 w -> validateHourlyRate(w.getHourlyRate())
         );

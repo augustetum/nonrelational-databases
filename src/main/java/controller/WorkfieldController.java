@@ -1,5 +1,6 @@
 package controller;
 
+import dto.CreateWorkfieldCategoryRequest;
 import dto.EditWorkfieldDto;
 import dto.ValidationResultDto;
 import entity.Workfield;

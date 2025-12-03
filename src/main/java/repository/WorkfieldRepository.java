@@ -117,7 +117,6 @@ public class WorkfieldRepository {
 
         WorkfieldCategory category = new WorkfieldCategory();
         category.setCategoryId(doc.getString("categoryId"));
-        category.setParentId(doc.getString("parentId"));
         workfield.setCategory(category);
 
         workfield.setDescription(doc.getString("description"));

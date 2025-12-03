@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class CreateWorkfieldRequestDto {
-    private String category;
+    private String categoryId;
     private String description;
     private int hourlyRate;
 }

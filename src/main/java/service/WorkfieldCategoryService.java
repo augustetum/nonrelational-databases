@@ -19,12 +19,12 @@ public class WorkfieldCategoryService {
         return  categoryRepository.getAncestry(categoryId);
     }
 
-    public void addWorkfieldCategory(WorkfieldCategory category) {
-        if (categoryRepository.isDirectChildOf(category.getName(), category.getParentId())) {
-            throw new IllegalArgumentException("Category with name '" + category.getName() + "' already exists in this path.");
+    public void addWorkfieldCategory(String name, String parentId) {
+        if (categoryRepository.isDirectChildOf(name, parentId)) {
+            throw new IllegalArgumentException("Category with name '" + name + "' already exists in this path.");
         }
 
-        categoryRepository.add(category);
+        categoryRepository.add(name, parentId);
     }
 
     public boolean categoryExists(String categoryId) {

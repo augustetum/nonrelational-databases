@@ -155,7 +155,7 @@ public class WorkfieldCategoryRepository {
         return isLeafNode;
     }
 
-    public void add(WorkfieldCategory category) {
+    public void add(String name, String parentId) {
         String statement = 
             """
                 create (child:WorkfieldCategory { id: $categoryId, name: $name })
@@ -166,9 +166,8 @@ public class WorkfieldCategoryRepository {
 
         // put parameters
         Map<String, Object> params = new HashMap<>();
-        params.put("categoryId", category.getCategoryId());
-        params.put("parentId", category.getParentId());
-        params.put("name", category.getName());
+        params.put("categoryId", name);
+        params.put("parentId", parentId);
 
         // execute statement
         try (Session session = driver.session()) {

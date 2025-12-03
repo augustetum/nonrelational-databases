@@ -27,12 +27,7 @@ public class WorkfieldCategoryController {
 
     @PostMapping
     public ResponseEntity<?> addCategory(@RequestBody CreateWorkfieldCategoryRequest request) {
-        WorkfieldCategory category = new WorkfieldCategory();
-        category.setParentId(request.getParentId());
-        category.setName(request.getName());
-
-        categoryService.addWorkfieldCategory(category);
-
+        categoryService.addWorkfieldCategory(request.getName(), request.getParentId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

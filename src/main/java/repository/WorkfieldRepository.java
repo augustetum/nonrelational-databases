@@ -73,14 +73,14 @@ public class WorkfieldRepository {
                  .toList();
     }
 
-    // TODO: make get by id
-    //public List<Workfield> getAllWorkfieldsByCategoryByFreelancerId(String freelancerId, WorkfieldCategory category) {
-    //     List<Workfield> freelancerWorkfields = getWorkfieldsByFreelancerId(freelancerId);
+    //Patvarkyta (tikiuosi)
+    public List<Workfield> getAllWorkfieldsByCategoryByFreelancerId(String freelancerId, String categoryId) {
+         List<Workfield> freelancerWorkfields = getWorkfieldsByFreelancerId(freelancerId);
 
-    //     return freelancerWorkfields.stream()
-    //             .filter(workfield -> category.equals(workfield.getCategory()))
-    //             .toList();
-    // }
+         return freelancerWorkfields.stream()
+                 .filter(workfield -> categoryId.equals(workfield.getCategoryId()))
+                 .toList();
+     }
 
     public void addWorkfield(String freelancerId, Workfield workfield) {
         workfield.setId(IdentifierGenerator.generateId());

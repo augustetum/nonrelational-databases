@@ -2,7 +2,6 @@ package service;
 
 import dto.ValidationResultDto;
 import entity.Workfield;
-import entity.WorkfieldCategory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,7 +21,7 @@ public class WorkfieldValidationService {
         }
 
         List<Function<Workfield, ValidationResultDto>> validators = List.of(
-                w -> validateCategory(w.getCategory()),
+                w -> validateCategoryId(w.getCategoryId()),
                 w -> validateDescription(w.getDescription()),
                 w -> validateHourlyRate(w.getHourlyRate())
         );
@@ -34,15 +33,12 @@ public class WorkfieldValidationService {
                 .orElse(ValidationResultDto.valid());
     }
 
-    private ValidationResultDto validateCategory(WorkfieldCategory category) {
-        if (category == null) {
-            return ValidationResultDto.invalid("Workfield category can't be null.");
-        }
-        if (category.getCategoryId() == null || category.getCategoryId().isBlank()) {
+    private ValidationResultDto validateCategoryId(String categoryId) {
+        if (categoryId == null || categoryId.isBlank()) {
             return ValidationResultDto.invalid("Workfield category ID can't be empty.");
         }
-        if (!categoryService.categoryExists(category.getCategoryId())) {
-            return ValidationResultDto.invalid("Category with ID '" + category.getCategoryId() + "' does not exist.");
+        if (!categoryService.categoryExists(categoryId)) {
+            return ValidationResultDto.invalid("Category with ID '" + categoryId + "' does not exist.");
         }
         return ValidationResultDto.valid();
     }

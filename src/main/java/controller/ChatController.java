@@ -33,14 +33,13 @@ public class ChatController {
 
     @MessageMapping("/chat.private")
     public void sendPrivateMessage(@Payload AddMessageDto message, SimpMessageHeaderAccessor headerAccessor) {
-        String username = (String) headerAccessor.getSessionAttributes().get("username");
-        if (username == null) {
-            System.err.println("Username not found in session!");
+        String userEmail = (String) headerAccessor.getSessionAttributes().get("username"); //is WebSocket sessiono extractinamas username which is actually the email
+        if (userEmail == null) {
+            System.err.println("User email not found in session");
             return;
         }
 
-        // TODO: where the fuck username comes from
-        chatService.sendPrivateMessage(message.getConversationId(), username, message.getContent());
+        chatService.sendPrivateMessage(message.getConversationId(), userEmail, message.getContent());
     }
 
     @GetMapping("/api/chat/history/{conversationId}")

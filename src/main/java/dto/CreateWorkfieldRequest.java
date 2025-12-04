@@ -3,8 +3,8 @@ package dto;
 import lombok.Data;
 
 @Data
-public class CreateWorkfieldRequestDto {
-    private String category;
+public class CreateWorkfieldRequest {
+    private String categoryId;
     private String description;
     private int hourlyRate;
 }

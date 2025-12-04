@@ -177,7 +177,7 @@ public class FreelancerRepository {
         } else if (phoneNumberObj instanceof Number) {
             phoneNumber = ((Number) phoneNumberObj).longValue();
         } else {
-            phoneNumber = 0L; // Default value
+            phoneNumber = 0L;
         }
         return Freelancer.builder()
                 .id(document.getString("_id"))

@@ -3,7 +3,6 @@ package service;
 import dto.EditWorkfieldDto;
 import dto.ValidationResultDto;
 import entity.Workfield;
-import entity.WorkfieldCategory;
 import org.springframework.stereotype.Service;
 import repository.WorkfieldRepository;
 
@@ -27,12 +26,12 @@ public class WorkfieldService {
         return workfieldRepository.getWorkfieldsByFreelancerId(freelancerId);
     }
 
-    public List<Workfield> getAllWorkfieldsByCategory(WorkfieldCategory category){
-        return workfieldRepository.getAllWorkfieldsByCategory(category);
+    public List<Workfield> getAllWorkfieldsByCategory(String categoryId){
+        return workfieldRepository.getAllWorkfieldsByCategory(categoryId);
     }
 
-    public List<Workfield> getAllWorkfieldsByCategoryByFreelancerId(String freelancerId, WorkfieldCategory category){
-        return workfieldRepository.getAllWorkfieldsByCategoryByFreelancerId(freelancerId, category);
+    public List<Workfield> getAllWorkfieldsByCategoryByFreelancerId(String freelancerId, String categoryId){
+        return workfieldRepository.getAllWorkfieldsByCategoryByFreelancerId(freelancerId, categoryId);
     }
 
     public void addWorkfield(String freelancerId, Workfield workfield){

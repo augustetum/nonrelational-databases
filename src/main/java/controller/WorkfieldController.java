@@ -76,13 +76,13 @@ public class WorkfieldController {
         workfield.setDescription(request.getDescription());
         workfield.setHourlyRate(request.getHourlyRate());
 
-        // TODO: sutvarkyti validaicija
-        // ValidationResultDto validationResult = validationService.validate(workfield);
-        // if (validationResult.isInvalid()) {
-        //     eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_CREATE", "FAILURE", freelancerId,
-        //             "WORKFIELD INVALID");
-        //     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
-        // }
+        //Sutvarkyta
+         ValidationResultDto validationResult = validationService.validate(workfield);
+         if (validationResult.isInvalid()) {
+             eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_CREATE", "FAILURE", freelancerId,
+                     "WORKFIELD INVALID");
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+         }
 
         // add workfield
         workfieldService.addWorkfield(freelancerId, workfield);
@@ -106,13 +106,13 @@ public class WorkfieldController {
         workfield.setDescription(dto.getDescription());
         workfield.setHourlyRate(dto.getHourlyRate());
 
-        // TODO: sutvarkyti validaicija
-        // ValidationResultDto validationResult = validationService.validate(workfield);
-        // if (validationResult.isInvalid()) {
-        //     eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_EDIT", "FAILURE", freelancerId,
-        //             "WORKFIELD INVALID");
-        //     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
-        // }
+         // Sutvarkyta
+         ValidationResultDto validationResult = validationService.validate(workfield);
+         if (validationResult.isInvalid()) {
+             eventLogService.logEvent("WORKFIELD", workfield.getId(), "WORKFIELD_EDIT", "FAILURE", freelancerId,
+                     "WORKFIELD INVALID");
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(validationResult);
+         }
 
         // edit workfield
         workfieldService.editWorkfield(freelancerId, workfieldId, dto);

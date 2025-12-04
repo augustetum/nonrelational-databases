@@ -19,10 +19,12 @@ import java.util.stream.Stream;
 @Repository
 public class WorkfieldRepository {
     private final MongoCollection<Document> collection;
+    private final MongoCollection<Document> workfieldCollection;
     private final Neo4JRepository neo4JRepository;
 
     public WorkfieldRepository(MongoDbContext dbContext, Neo4JRepository neo4JRepository) {
         this.collection = dbContext.freelancers;
+        this.workfieldCollection = dbContext.workfieldCategories;
         this.neo4JRepository = neo4JRepository;
     }
 
@@ -56,23 +58,23 @@ public class WorkfieldRepository {
                 .toList();
     }
 
-    // TODO: get all by id
-    // public List<Workfield> getAllWorkfieldsByCategory(WorkfieldCategory category) {
-    //     Bson filter = Filters.eq("workfields.categoryId", category.getCategoryId());
-    //     List<Document> freelancerDocs = collection.find(filter).into(new ArrayList<>());
+    //Patvarkyta (tikiuosi)
+    public List<Workfield> getAllWorkfieldsByCategory(String categoryId) {
+         Bson filter = Filters.eq("workfields.categoryId", categoryId);
+         List<Document> freelancerDocs = collection.find(filter).into(new ArrayList<>());
 
-    //     return freelancerDocs.stream()
-    //             .flatMap(freelancerDoc -> {
-    //                 List<Document> workfieldDocs = freelancerDoc.getList("workfields", Document.class);
-    //                 return workfieldDocs == null ? Stream.<Document>of() : workfieldDocs.stream();
-    //             })
-    //             .map(this::convertDocumentToWorkfield)
-    //             .filter(workfield -> category.equals(workfield.getCategory()))
-    //             .toList();
-    // }
+         return freelancerDocs.stream()
+                 .flatMap(freelancerDoc -> {
+                     List<Document> workfieldDocs = freelancerDoc.getList("workfields", Document.class);
+                     return workfieldDocs == null ? Stream.<Document>of() : workfieldDocs.stream();
+                 })
+                 .map(workfield -> WorkfieldMapper.toWorkfield(workfield))
+                 .filter(workfield -> categoryId.equals(workfield.getCategoryId()))
+                 .toList();
+    }
 
     // TODO: make get by id
-    // public List<Workfield> getAllWorkfieldsByCategoryByFreelancerId(String freelancerId, WorkfieldCategory category) {
+    //public List<Workfield> getAllWorkfieldsByCategoryByFreelancerId(String freelancerId, WorkfieldCategory category) {
     //     List<Workfield> freelancerWorkfields = getWorkfieldsByFreelancerId(freelancerId);
 
     //     return freelancerWorkfields.stream()

@@ -47,20 +47,20 @@ public class WorkfieldController {
     }
 
     @GetMapping("/{category}")
-    // TODO: patvarkyti, kad liktu tik kategorijos id
-    public ResponseEntity<List<Workfield>> getWorkfieldsByCategory(@PathVariable WorkfieldCategory category) {
-        List<Workfield> workfields = workfieldService.getAllWorkfieldsByCategory(category);
+    //Patvarkyta
+    public ResponseEntity<List<Workfield>> getWorkfieldsByCategory(String categoryId) {
+        List<Workfield> workfields = workfieldService.getAllWorkfieldsByCategory(categoryId);
         return ResponseEntity.ok(workfields);
     }
 
     @GetMapping("/freelancer/{category}")
-    // TODO: patvarkyti, kad liktu tik kategorijos id
-    public ResponseEntity<List<Workfield>> getWorkfieldsByFreelancerIdByCategory(@PathVariable WorkfieldCategory category, Authentication authentication) {
+    //Patvarkyta
+    public ResponseEntity<List<Workfield>> getWorkfieldsByFreelancerIdByCategory(String categoryId, Authentication authentication) {
         // get user details
         CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
         String freelancerId = userDetails.getUser().getId();
         
-        List<Workfield> workfields = workfieldService.getAllWorkfieldsByCategoryByFreelancerId(freelancerId, category);
+        List<Workfield> workfields = workfieldService.getAllWorkfieldsByCategoryByFreelancerId(freelancerId, categoryId);
         return ResponseEntity.ok(workfields);
     }
 

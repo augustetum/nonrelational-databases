@@ -24,7 +24,6 @@ public class RecommendationRepository {
         String statement =
             """
                 match  (client:Client { clientId:$clientId })-[:CREATED]->(b:Booking)-[:REQUIRES]->(category:WorkfieldCategory)
-                where b.date >= date() - duration('P15D')
 
                 match (category)-[:HAS_PARENT*0..]->(root:WorkfieldCategory)
                 where not (root)-[:HAS_PARENT]->(:WorkfieldCategory)

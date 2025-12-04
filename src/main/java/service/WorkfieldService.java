@@ -3,7 +3,6 @@ package service;
 import dto.EditWorkfieldDto;
 import dto.ValidationResultDto;
 import entity.Workfield;
-import entity.WorkfieldCategory;
 import org.springframework.stereotype.Service;
 import repository.WorkfieldRepository;
 

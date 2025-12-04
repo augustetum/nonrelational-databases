@@ -58,7 +58,6 @@ public class WorkfieldRepository {
                 .toList();
     }
 
-    //Patvarkyta (tikiuosi)
     public List<Workfield> getAllWorkfieldsByCategory(String categoryId) {
          Bson filter = Filters.eq("workfields.categoryId", categoryId);
          List<Document> freelancerDocs = collection.find(filter).into(new ArrayList<>());
@@ -73,7 +72,6 @@ public class WorkfieldRepository {
                  .toList();
     }
 
-    //Patvarkyta (tikiuosi)
     public List<Workfield> getAllWorkfieldsByCategoryByFreelancerId(String freelancerId, String categoryId) {
          List<Workfield> freelancerWorkfields = getWorkfieldsByFreelancerId(freelancerId);
 

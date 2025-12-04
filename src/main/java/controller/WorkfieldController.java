@@ -4,7 +4,6 @@ import dto.CreateWorkfieldRequest;
 import dto.EditWorkfieldDto;
 import dto.ValidationResultDto;
 import entity.Workfield;
-import entity.WorkfieldCategory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,16 +45,14 @@ public class WorkfieldController {
         return ResponseEntity.ok(workfields);
     }
 
-    @GetMapping("/{category}")
-    //Patvarkyta
-    public ResponseEntity<List<Workfield>> getWorkfieldsByCategory(String categoryId) {
+    @GetMapping("/{categoryId}")
+    public ResponseEntity<List<Workfield>> getWorkfieldsByCategory(@PathVariable String categoryId) {
         List<Workfield> workfields = workfieldService.getAllWorkfieldsByCategory(categoryId);
         return ResponseEntity.ok(workfields);
     }
 
-    @GetMapping("/freelancer/{category}")
-    //Patvarkyta
-    public ResponseEntity<List<Workfield>> getWorkfieldsByFreelancerIdByCategory(String categoryId, Authentication authentication) {
+    @GetMapping("/freelancer/{categoryId}")
+    public ResponseEntity<List<Workfield>> getWorkfieldsByFreelancerIdByCategory(@PathVariable String categoryId, Authentication authentication) {
         // get user details
         CustomFreelancerDetails userDetails = (CustomFreelancerDetails) authentication.getPrincipal();
         String freelancerId = userDetails.getUser().getId();

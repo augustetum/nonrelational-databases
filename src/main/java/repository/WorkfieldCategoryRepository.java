@@ -11,6 +11,7 @@ import org.neo4j.driver.types.Node;
 import org.springframework.stereotype.Repository;
 
 import entity.WorkfieldCategory;
+import util.IdentifierGenerator;
 import util.mappers.WorkfieldCategoryMapper;
 
 @Repository
@@ -166,7 +167,8 @@ public class WorkfieldCategoryRepository {
 
         // put parameters
         Map<String, Object> params = new HashMap<>();
-        params.put("categoryId", name);
+        params.put("categoryId", IdentifierGenerator.generateId());
+        params.put("name", name);
         params.put("parentId", parentId);
 
         // execute statement

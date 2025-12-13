@@ -1,4 +1,12 @@
 include:
-    - redis.yaml
-    - cassandra.yaml
-    - neo4j.yaml
+    # database setup
+    - ./containers/redis.yaml
+    - ./containers/neo4j.yaml
+    - ./containers/cassandra.yaml
+    
+    # log replication setup
+    - ./containers/zookeeper.yaml
+    - ./containers/kafka.yaml
+    - ./containers/debezium.yaml
+    - ./containers/elasticsearch.yaml
+    - ./containers/kibana.yaml

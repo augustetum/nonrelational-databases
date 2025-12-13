@@ -1,0 +1,12 @@
+services:
+    cassandra:
+      image: cassandra:5.0.6-jammy
+      container_name: cassandra
+      ports:
+        - "9042:9042"
+      volumes:
+        - cassandra_data:/var/lib/cassandra
+        - ./../config/cassandra.yaml:/etc/cassandra/cassandra.yaml
+
+volumes:
+  cassandra_data:

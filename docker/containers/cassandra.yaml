@@ -1,7 +1,14 @@
 services:
     cassandra:
-      image: cassandra:5.0.6-jammy
+      build:
+        context: .
+        dockerfile: Dockerfile.cassandra
       container_name: cassandra
+      command: >
+        bash -c "
+        export JVM_OPTS='-javaagent:/opt/debezium-cassandra/debezium-cassandra-agent.jar=/opt/debezium-cassandra/conf/debezium-connector.properties';
+        docker-entrypoint.sh cassandra -f
+        "
       ports:
         - "9042:9042"
       volumes:

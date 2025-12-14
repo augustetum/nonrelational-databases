@@ -1,0 +1,29 @@
+volumes:
+  redis_data:
+  neo4j_data:
+  cassandra_data:
+
+services:
+    redis:
+        image: redis:alpine3.22
+        ports:
+          - "6379:6379"
+        volumes:
+          - redis_data:/data
+    
+    neo4j:
+        image: neo4j:5.26.17-ubi9
+        environment:
+            NEO4J_AUTH: neo4j/darbsciu_rankuciu_klubas
+        ports:
+            - "7474:7474" # web interface
+            - "7687:7687" # db server 
+        volumes:
+            - neo4j_data:/data
+
+    cassandra:
+        image: cassandra:5.0.6
+        ports:
+        - "9042:9042"
+        volumes:
+            - cassandra_data:/var/lib/cassandra

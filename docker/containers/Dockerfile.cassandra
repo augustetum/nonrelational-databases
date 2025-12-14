@@ -1,7 +1,0 @@
-FROM cassandra:5.0.6
-
-# dowload debezium connector
-RUN curl -o /opt/debezium-cassandra/cassandra-agent.jar https://repo1.maven.org/maven2/io/debezium/debezium-connector-cassandra-5/3.3.2.Final/debezium-connector-cassandra-5-3.3.2.Final-jar-with-dependencies.jar
-
-# copy debezium agent properties file
-COPY debezium-connector.properties /opt/debezium-cassandra/conf/

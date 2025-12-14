@@ -6,7 +6,7 @@ services:
       container_name: cassandra
       command: >
         bash -c "
-        export JVM_OPTS='-javaagent:/opt/debezium-cassandra/debezium-cassandra-agent.jar=/opt/debezium-cassandra/conf/debezium-connector.properties';
+        export JVM_OPTS='-javaagent:/opt/debezium-cassandra/cassandra-agent.jar=/opt/debezium-cassandra/conf/debezium-connector.properties';
         docker-entrypoint.sh cassandra -f
         "
       ports:

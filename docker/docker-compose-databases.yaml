@@ -20,10 +20,3 @@ services:
         - "7687:7687" # db server 
     volumes:
         - neo4j_data:/data
-
-  cassandra:
-    image: cassandra:5.0.6
-    ports:
-    - "9042:9042"
-    volumes:
-        - cassandra_data:/var/lib/cassandra

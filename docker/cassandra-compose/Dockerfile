@@ -34,4 +34,6 @@ RUN chmod +x $DEBEZIUM_HOME/startup-script.sh &&\
 USER cassandra
 
 RUN mkdir -p $DEBEZIUM_HOME/relocation/archive $DEBEZIUM_HOME/relocation/error
-CMD ["/debezium/startup-script.sh"]
+
+# Override the default entrypoint to run our custom startup script
+ENTRYPOINT ["/debezium/startup-script.sh"]

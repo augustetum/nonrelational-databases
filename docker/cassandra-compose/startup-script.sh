@@ -1,15 +1,18 @@
 #!/bin/sh
 
+# run cassandra
 echo "Starting Cassandra..."
 /opt/cassandra/bin/cassandra -R &
 
 CASSANDRA_PID=$!
 echo "Cassandra started with PID: $CASSANDRA_PID"
 
+# wait for cassandra to start accepting connections on port 9042
 echo "Waiting for Cassandra to be ready..."
-# Wait for Cassandra to start accepting connections on port 9042
+
 MAX_TRIES=60
 COUNT=0
+
 until cqlsh -e "describe keyspaces" > /dev/null 2>&1 || [ $COUNT -eq $MAX_TRIES ]; do
   COUNT=$((COUNT + 1))
   echo "Attempt $COUNT/$MAX_TRIES: Cassandra not ready yet, waiting..."
@@ -23,10 +26,9 @@ fi
 
 echo "Cassandra is ready!"
 
-# Optional: Run initialization script
-# cqlsh -f $DEBEZIUM_HOME/inventory.cql
-
+# running debezium
 echo "Starting Debezium connector..."
+
 java -Dlog4j.debug -Dlog4j.configuration=file:$DEBEZIUM_HOME/log4j.properties \
   --add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
   --add-exports java.base/jdk.internal.ref=ALL-UNNAMED \

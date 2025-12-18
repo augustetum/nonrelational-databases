@@ -1,0 +1,9 @@
+FROM confluentinc/cp-kafka-connect:7.6.0
+
+USER root
+
+# Try installing without the specific patch version to let Hub find the best match
+RUN confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:latest
+
+# Ensure permissions are correct for the confluent user
+RUN chown -R 1000:1000 /usr/share/confluent-hub-components

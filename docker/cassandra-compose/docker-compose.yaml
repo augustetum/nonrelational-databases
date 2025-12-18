@@ -8,7 +8,7 @@ volumes:
 
 services:
   kafka:
-    image: confluentinc/cp-kafka:8.0.3
+    image: confluentinc/cp-kafka:7.6.0
     container_name: kafka
     ports:
       - "9092:9092"
@@ -31,17 +31,20 @@ services:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     volumes:
       - kafka_data:/var/lib/kafka/data
+    networks:
+      - elastic-pipeline
 
   kafka-connect:
-    image: confluentinc/cp-kafka-connect:8.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile.connect
     container_name: kafka-connect
     depends_on:
       - kafka
-      - es01
     ports:
       - "8083:8083"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: kafka:9092
+      CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
       CONNECT_REST_PORT: 8083
       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
       CONNECT_GROUP_ID: "kafka-connect-group"
@@ -59,34 +62,22 @@ services:
       - bash
       - -c
       - |
-        echo "Installing Elasticsearch Connector"
-        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:14.1.1
-
-        echo "Waiting for Kafka to be ready..."
-        # Wait for Kafka using a simple loop instead of cub
-        MAX_WAIT=120
-        COUNT=0
-        until kafka-broker-api-versions --bootstrap-server kafka:9092 > /dev/null 2>&1; do
-          COUNT=$$((COUNT + 1))
-          if [ $$COUNT -ge $$MAX_WAIT ]; then
-            echo "Kafka failed to start after $$MAX_WAIT seconds"
-            exit 1
-          fi
-          echo "Waiting for Kafka... ($$COUNT/$$MAX_WAIT)"
-          sleep 1
-        done
-        echo "Kafka is ready!"
-
-        echo "Creating truststore from CA certificate"
+        # 1. Create truststore
         keytool -import -trustcacerts -alias es-ca \
           -file /certs/ca/ca.crt \
           -keystore /tmp/truststore.jks \
           -storepass changeit -noprompt
-
-        echo "Setting truststore permissions"
         chmod 644 /tmp/truststore.jks
 
-        echo "Launching Kafka Connect"
+        # 2. Wait for Kafka manually (more reliable than the built-in check)
+        echo "Waiting for Kafka..."
+        while ! nc -z kafka 9092; do
+          sleep 1
+        done
+        echo "Kafka is up!"
+
+        # 3. Launch Kafka Connect and force the bootstrap server env
+        export KAFKA_ADVERTISED_LISTENERS='PLAINTEXT://kafka:9092'
         exec /etc/confluent/docker/run
     volumes:
       - kafka_connect_data:/data
@@ -97,6 +88,8 @@ services:
       timeout: 10s
       retries: 30
       start_period: 60s
+    networks:
+      - elastic-pipeline
 
   cassandra:
     image: custom-cassandra:latest
@@ -165,10 +158,10 @@ services:
         find . -type f -exec chmod 640 \{\} \;;
 
         echo "Waiting for Elasticsearch availability";
-        until curl -s --cacert config/certs/ca/ca.crt https://es01:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
+        until curl -s --cacert config/certs/ca/ca.crt http://es01:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
 
         echo "Setting kibana_system password";
-        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" https://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
+        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" http://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
         
         echo "All done!";
       '
@@ -196,11 +189,11 @@ services:
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
       - bootstrap.memory_lock=true
       - xpack.security.enabled=true
-      - xpack.security.http.ssl.enabled=true
+      - xpack.security.http.ssl.enabled=false
       - xpack.security.http.ssl.key=certs/es01/es01.key
       - xpack.security.http.ssl.certificate=certs/es01/es01.crt
       - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
-      - xpack.security.transport.ssl.enabled=true
+      - xpack.security.transport.ssl.enabled=false
       - xpack.security.transport.ssl.key=certs/es01/es01.key
       - xpack.security.transport.ssl.certificate=certs/es01/es01.crt
       - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
@@ -215,11 +208,13 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -s --cacert config/certs/ca/ca.crt https://localhost:9200 | grep -q 'missing authentication credentials'",
+          "curl -s -u elastic:${ELASTIC_PASSWORD} http://localhost:9200 | grep -q 'cluster_name'",
         ]
       interval: 10s
       timeout: 10s
       retries: 120
+    networks:
+      - elastic-pipeline
 
   kibana:
     depends_on:
@@ -234,7 +229,7 @@ services:
       - ${KIBANA_PORT}:5601
     environment:
       - SERVERNAME=kibana
-      - ELASTICSEARCH_HOSTS=https://es01:9200
+      - ELASTICSEARCH_HOSTS=http://es01:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
       - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
@@ -274,7 +269,7 @@ services:
         sleep 10
 
         echo 'Creating Elasticsearch index...'
-        curl -X PUT 'https://es01:9200/events' \
+        curl -X PUT 'http://es01:9200/events' \
           -H 'Content-Type: application/json' \
           -u elastic:changeme \
           -k \
@@ -290,3 +285,7 @@ services:
 
         echo 'Pipeline setup complete!'
     restart: "no"
+
+networks:
+  elastic-pipeline:
+    driver: bridge

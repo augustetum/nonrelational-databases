@@ -5,6 +5,8 @@
     "tasks.max": "1",
 
     "topics": "test_prefix.darbsciu_rankuciu_klubas.events",
+    "external.resource.usage": "index",
+    "topic.to.external.resource.mapping": "test_prefix.darbsciu_rankuciu_klubas.events:events",
 
     "connection.url": "https://es01:9200",
     "connection.username": "elastic",
@@ -14,13 +16,8 @@
     "schema.ignore": "true",
 
     "elastic.security.protocol": "SSL",
-
     "elastic.https.ssl.truststore.location": "/tmp/truststore.jks",
     "elastic.https.ssl.truststore.password": "changeit",
-
-    "elastic.https.ssl.keystore.location": "",
-    "elastic.https.ssl.keystore.password": "",
-    "elastic.https.ssl.key.password": "",
 
     "errors.tolerance": "all",
     "errors.log.enable": "true"

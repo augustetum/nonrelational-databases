@@ -1,10 +1,10 @@
 volumes:
- certs:
- cassandra_data:
- es_data_01:
- kibana_data:
- kafka_connect_data:
- kafka_data:
+  certs:
+  cassandra_data:
+  es_data_01:
+  kibana_data:
+  kafka_connect_data:
+  kafka_data:
 
 services:
   kafka:
@@ -60,22 +60,43 @@ services:
       - -c
       - |
         echo "Installing Elasticsearch Connector"
-        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:15.1.0
-        
+        confluent-hub install --no-prompt confluentinc/kafka-connect-elasticsearch:14.1.1
+
+        echo "Waiting for Kafka to be ready..."
+        # Wait for Kafka using a simple loop instead of cub
+        MAX_WAIT=120
+        COUNT=0
+        until kafka-broker-api-versions --bootstrap-server kafka:9092 > /dev/null 2>&1; do
+          COUNT=$$((COUNT + 1))
+          if [ $$COUNT -ge $$MAX_WAIT ]; then
+            echo "Kafka failed to start after $$MAX_WAIT seconds"
+            exit 1
+          fi
+          echo "Waiting for Kafka... ($$COUNT/$$MAX_WAIT)"
+          sleep 1
+        done
+        echo "Kafka is ready!"
+
         echo "Creating truststore from CA certificate"
         keytool -import -trustcacerts -alias es-ca \
           -file /certs/ca/ca.crt \
           -keystore /tmp/truststore.jks \
           -storepass changeit -noprompt
-        
+
         echo "Setting truststore permissions"
         chmod 644 /tmp/truststore.jks
-        
-        echo "Launching Kafka Connect as appuser"
+
+        echo "Launching Kafka Connect"
         exec /etc/confluent/docker/run
     volumes:
       - kafka_connect_data:/data
       - certs:/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/ || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
 
   cassandra:
     image: custom-cassandra:latest
@@ -84,14 +105,24 @@ services:
       - cassandra_data:/var/lib/cassandra
     ports:
       - "9042:9042"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cqlsh -e 'SELECT cluster_name FROM system.local' || exit 1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
 
   setup:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     container_name: es-setup
     volumes:
-     - certs:/usr/share/elasticsearch/config/certs
+      - certs:/usr/share/elasticsearch/config/certs
     user: "root"
-    command: > 
+    command: >
       bash -c '
         if [ x${ELASTIC_PASSWORD} == x ]; then
           echo "Set the ELASTIC_PASSWORD environment variable in the .env file";
@@ -220,3 +251,42 @@ services:
       interval: 10s
       timeout: 10s
       retries: 120
+
+  connector-setup:
+    image: curlimages/curl:latest
+    container_name: connector-setup
+    depends_on:
+      - kafka-connect
+      - es01
+    volumes:
+      - ./create-es-sink-connector.json:/config/create-es-sink-connector.json
+      - ./create-es-index.json:/config/create-es-index.json
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        echo 'Waiting for Kafka Connect to be ready...'
+        while ! curl -s -f http://kafka-connect:8083/connectors > /dev/null 2>&1; do
+          echo 'Kafka Connect not ready yet, waiting...'
+          sleep 5
+        done
+        echo 'Kafka Connect is ready!'
+        sleep 10
+
+        echo 'Creating Elasticsearch index...'
+        curl -X PUT 'https://es01:9200/events' \
+          -H 'Content-Type: application/json' \
+          -u elastic:changeme \
+          -k \
+          --data-binary @/config/create-es-index.json || true
+
+        echo 'Creating Elasticsearch sink connector...'
+        curl -X POST http://kafka-connect:8083/connectors \
+          -H 'Content-Type: application/json' \
+          --data-binary @/config/create-es-sink-connector.json
+
+        echo 'Checking connector status...'
+        curl http://kafka-connect:8083/connectors/es-sink-test/status
+
+        echo 'Pipeline setup complete!'
+    restart: "no"

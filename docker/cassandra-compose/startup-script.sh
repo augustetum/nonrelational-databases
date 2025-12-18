@@ -26,8 +26,36 @@ fi
 
 echo "Cassandra is ready!"
 
-# running debezium
-echo "Starting Debezium connector..."
+# Verify system.local is accessible (this is what Debezium queries)
+echo "Verifying system.local table access..."
+MAX_TRIES=30
+COUNT=0
+
+until cqlsh -e "SELECT cluster_name FROM system.local" > /dev/null 2>&1 || [ $COUNT -eq $MAX_TRIES ]; do
+  COUNT=$((COUNT + 1))
+  echo "Attempt $COUNT/$MAX_TRIES: system.local not accessible yet, waiting..."
+  sleep 2
+done
+
+if [ $COUNT -eq $MAX_TRIES ]; then
+  echo "ERROR: system.local table not accessible after $MAX_TRIES attempts"
+  exit 1
+fi
+
+echo "system.local is accessible!"
+
+# Extra wait to ensure stability
+echo "Waiting an additional 10 seconds for Cassandra to stabilize..."
+sleep 10
+
+# Test connection one more time before starting Debezium
+echo "Final connection test..."
+if ! cqlsh -e "SELECT cluster_name FROM system.local" > /dev/null 2>&1; then
+  echo "ERROR: Final connection test failed!"
+  exit 1
+fi
+
+echo "All checks passed! Starting Debezium connector..."
 
 java -Dlog4j.debug -Dlog4j.configuration=file:$DEBEZIUM_HOME/log4j.properties \
   --add-exports java.base/jdk.internal.misc=ALL-UNNAMED \

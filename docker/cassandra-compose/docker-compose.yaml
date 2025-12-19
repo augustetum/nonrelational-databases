@@ -75,6 +75,8 @@ services:
     networks:
       - elastic-pipeline
     environment:
+      - CASSANDRA_RPC_ADDRESS=0.0.0.0
+      - CASSANDRA_BROADCAST_RPC_ADDRESS=127.0.0.1
       - JAVA_TOOL_OPTIONS="-Dbootstrap.servers=kafka:9092 -Dkafka.producer.bootstrap.servers=kafka:9092"
       - >-
         JDK_JAVA_OPTIONS=
@@ -91,7 +93,7 @@ services:
       - cassandra_data:/var/lib/cassandra
       - ./debezium-agent.properties:/debezium/debezium-agent.properties
     ports:
-      - "9042:9042"
+      - "9043:9042"
 
   setup:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}

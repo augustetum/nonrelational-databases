@@ -1,0 +1,32 @@
+sources:
+  kafka_source:
+    type: kafka
+    bootstrap_servers: "172.20.0.2:9092"
+    group_id: "vector-bridge"
+    topics: ["events_clean"]
+
+transforms:
+  parse_json:
+    type: remap
+    inputs: ["kafka_source"]
+    source: |
+      . = parse_json!(.message)
+      .id = .payload.after.id.value
+      .eventtype = .payload.after.eventtype.value
+      .userid = .payload.after.userid.value
+      .details = .payload.after.details.value
+
+sinks:
+  elasticsearch_sink:
+    type: elasticsearch
+    inputs: ["parse_json"]
+    endpoints: ["http://172.20.0.5:9200"]
+    mode: "bulk"
+    bulk:
+      index: "events_clean"
+    auth:
+      strategy: basic
+      user: "elastic"
+      password: "changeme"
+    api_version: "v8"
+    compression: "none"

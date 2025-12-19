@@ -29,11 +29,31 @@ public class EventElasticsearchRepository {
     }
 
     public List<Event> findByEventStatus(String eventStatus) {
+        return findByField("eventStatus", eventStatus);
+    }
+
+    public List<Event> findByEventType(String eventType) {
+        return findByField("eventType", eventType);
+    }
+
+    public List<Event> findByEntityType(String entityType) {
+        return findByField("entityType", entityType);
+    }
+
+    public List<Event> findByUserId(String userId) {
+        return findByField("userId", userId);
+    }
+
+    public List<Event> findByEntityId(String entityId) {
+        return findByField("entityId", entityId);
+    }
+
+    private List<Event> findByField(String fieldName, String fieldValue) {
         try {
             Query query = Query.of(q -> q
                 .match(m -> m
-                    .field("eventStatus")
-                    .query(eventStatus)
+                    .field(fieldName)
+                    .query(fieldValue)
                 )
             );
 

@@ -34,4 +34,36 @@ public class EventElasticsearchController {
             return ResponseEntity.ok("Nothing to show");
         return ResponseEntity.ok(events);
     }
+
+    @GetMapping("/by-event-type")
+    public ResponseEntity<?> getByEventType(@RequestParam String eventType) {
+        List<Event> events = eventElasticsearchService.getByEventType(eventType);
+        if (events.isEmpty())
+            return ResponseEntity.ok("Nothing to show");
+        return ResponseEntity.ok(events);
+    }
+
+    @GetMapping("/by-entity-type")
+    public ResponseEntity<?> getByEntityType(@RequestParam String entityType) {
+        List<Event> events = eventElasticsearchService.getByEntityType(entityType);
+        if (events.isEmpty())
+            return ResponseEntity.ok("Nothing to show");
+        return ResponseEntity.ok(events);
+    }
+
+    @GetMapping("/by-user")
+    public ResponseEntity<?> getByUserId(@RequestParam String userId) {
+        List<Event> events = eventElasticsearchService.getByUserId(userId);
+        if (events.isEmpty())
+            return ResponseEntity.ok("Nothing to show");
+        return ResponseEntity.ok(events);
+    }
+
+    @GetMapping("/by-entity-id")
+    public ResponseEntity<?> getByEntityId(@RequestParam String entityId) {
+        List<Event> events = eventElasticsearchService.getByEntityId(entityId);
+        if (events.isEmpty())
+            return ResponseEntity.ok("Nothing to show");
+        return ResponseEntity.ok(events);
+    }
 }

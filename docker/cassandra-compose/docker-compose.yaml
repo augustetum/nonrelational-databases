@@ -6,10 +6,6 @@ volumes:
   kafka_connect_data:
   kafka_data:
 
-networks:
-  elastic-pipeline:
-    driver: bridge
-
 services:
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -43,6 +39,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      CONNECT_HEAP_OPTS: -Xms512m -Xmx1g
       CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
       CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
       KAFKA_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.isolation=DEBUG
@@ -79,6 +76,17 @@ services:
       - elastic-pipeline
     environment:
       - JAVA_TOOL_OPTIONS="-Dbootstrap.servers=kafka:9092 -Dkafka.producer.bootstrap.servers=kafka:9092"
+      - >-
+        JDK_JAVA_OPTIONS=
+        --add-opens java.base/java.lang=ALL-UNNAMED
+        --add-opens java.base/java.util=ALL-UNNAMED
+        --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+        --add-opens java.base/java.io=ALL-UNNAMED
+        --add-opens java.base/java.rmi=ALL-UNNAMED
+        --add-opens java.base/java.nio=ALL-UNNAMED
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens java.base/sun.util.calendar=ALL-UNNAMED
+        --add-opens java.base/math=ALL-UNNAMED
     volumes:
       - cassandra_data:/var/lib/cassandra
       - ./debezium-agent.properties:/debezium/debezium-agent.properties
@@ -115,9 +123,9 @@ services:
       retries: 120
 
   es01:
-    depends_on:
-      setup:
-        condition: service_healthy
+    #depends_on:
+    #  setup:
+    #    condition: service_completed_successfully
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     container_name: es01
     volumes:
@@ -130,8 +138,15 @@ services:
       - cluster.name=${CLUSTER_NAME}
       - discovery.type=single-node
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=false
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # This is the most important line
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     networks:
       - elastic-pipeline
     healthcheck:
@@ -145,9 +160,9 @@ services:
       retries: 120
 
   kibana:
-    depends_on:
-      es01:
-        condition: service_healthy
+    #depends_on:
+    #  es01:
+    #    condition: service_healthy
     image: docker.elastic.co/kibana/kibana:${STACK_VERSION}
     container_name: kibana
     volumes:
@@ -156,10 +171,17 @@ services:
     ports:
       - ${KIBANA_PORT}:5601
     environment:
+      - ELASTICSEARCH_HOSTS=http://es01:9200
+      - xpack.security.enabled=false
       - SERVERNAME=kibana
       - ELASTICSEARCH_HOSTS=http://es01:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
+      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+    links:
+      - es01 # This forces a host entry for 'es01' inside the Kibana container
     networks:
       - elastic-pipeline
 
@@ -182,3 +204,8 @@ services:
         sleep 10
         curl -X PUT 'http://es01:9200/events' -H 'Content-Type: application/json' -u elastic:changeme --data-binary @/config/create-es-index.json || true
         curl -X POST http://kafka-connect:8083/connectors -H 'Content-Type: application/json' --data-binary @/config/create-es-sink-connector.json
+
+networks:
+  elastic-pipeline:
+    name: elastic-pipeline
+    driver: bridge

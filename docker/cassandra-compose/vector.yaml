@@ -2,32 +2,42 @@ sources:
   kafka_source:
     type: kafka
     bootstrap_servers: "kafka:9092"
-    group_id: "vector-bridge"
-    topics: ["events_clean"]
+    group_id: "presentation-final-v4"
+    topics: ["test_prefix.darbsciu_rankuciu_klubas.events"]
+    auto_offset_reset: "earliest"
+    decoding:
+      codec: "json"
 
 transforms:
-  parse_json:
+  unwrap_debezium:
     type: remap
     inputs: ["kafka_source"]
     source: |
-      . = parse_json!(.message)
-      # Flattening the nested Cassandra fields
-      .id = .payload.after.id.value
-      .eventtype = .payload.after.eventtype.value
-      .userid = .payload.after.userid.value
-      .details = .payload.after.details.value
+      if exists(.payload.after) {
+          .id = .payload.after.id.value
+          .time = .payload.after.time.value
+          .details = .payload.after.details.value
+          .entityid = .payload.after.entityid.value
+          .entitytype = .payload.after.entitytype.value
+          .eventstatus = .payload.after.eventstatus.value
+          .eventtype = .payload.after.eventtype.value
+          .userid = .payload.after.userid.value
+          
+          del(.schema)
+          del(.payload)
+          del(.message)
+      }
 
 sinks:
   elasticsearch_sink:
     type: elasticsearch
-    inputs: ["parse_json"]
+    inputs: ["unwrap_debezium"]
     endpoints: ["http://es01:9200"]
     mode: "bulk"
     bulk:
-      index: "events_clean"
+      index: "events"
     auth:
-      strategy: basic
+      strategy: "basic"
       user: "elastic"
       password: "changeme"
-    api_version: "v8"
     compression: "none"

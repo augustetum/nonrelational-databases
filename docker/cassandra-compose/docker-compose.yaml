@@ -6,6 +6,10 @@ volumes:
   kafka_connect_data:
   kafka_data:
 
+networks:
+  elastic-pipeline:
+    driver: bridge
+
 services:
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -15,19 +19,14 @@ services:
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     volumes:
       - kafka_data:/var/lib/kafka/data
@@ -45,9 +44,7 @@ services:
       - "8083:8083"
     environment:
       CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
-      # Ensure this exact path is set:
       CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
-      # Add this to help us debug if it crashes again
       KAFKA_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.isolation=DEBUG
       CONNECT_REST_PORT: 8083
       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
@@ -65,69 +62,28 @@ services:
       - bash
       - -c
       - |
-        # 1. Create truststore
-        keytool -import -trustcacerts -alias es-ca \
-          -file /certs/ca/ca.crt \
-          -keystore /tmp/truststore.jks \
-          -storepass changeit -noprompt
+        keytool -import -trustcacerts -alias es-ca -file /certs/ca/ca.crt -keystore /tmp/truststore.jks -storepass changeit -noprompt
         chmod 644 /tmp/truststore.jks
-
-        # 2. Wait for Kafka manually (more reliable than the built-in check)
-        echo "Waiting for Kafka..."
-        while ! nc -z kafka 9092; do
-          sleep 1
-        done
-        echo "Kafka is up!"
-
-        # 3. Launch Kafka Connect and force the bootstrap server env
-        export KAFKA_ADVERTISED_LISTENERS='PLAINTEXT://kafka:9092'
+        while ! nc -z kafka 9092; do sleep 1; done
         exec /etc/confluent/docker/run
     volumes:
       - kafka_connect_data:/data
       - certs:/certs:ro
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8083/ || exit 1"]
-      interval: 10s
-      timeout: 10s
-      retries: 30
-      start_period: 60s
     networks:
       - elastic-pipeline
 
   cassandra:
     image: custom-cassandra:latest
+    container_name: drk-cassandra-1
     networks:
       - elastic-pipeline
     environment:
-      # REMOVE JVM_EXTRA_OPTS (The script handles Debezium now)
-
       - JAVA_TOOL_OPTIONS="-Dbootstrap.servers=kafka:9092 -Dkafka.producer.bootstrap.servers=kafka:9092"
-      - >-
-        JDK_JAVA_OPTIONS=
-        --add-opens java.base/java.io=ALL-UNNAMED
-        --add-opens java.base/java.util=ALL-UNNAMED
-        --add-opens java.base/java.util.concurrent=ALL-UNNAMED
-        --add-opens java.base/java.lang=ALL-UNNAMED
-        --add-opens java.base/math=ALL-UNNAMED
-        --add-opens java.base/nio=ALL-UNNAMED
-        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
-        --add-opens java.base/sun.util.calendar=ALL-UNNAMED
     volumes:
       - cassandra_data:/var/lib/cassandra
-      # REMOVE the volume mount for the JAR here since it is already inside the image
       - ./debezium-agent.properties:/debezium/debezium-agent.properties
     ports:
       - "9042:9042"
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "cqlsh -e 'SELECT cluster_name FROM system.local' || exit 1",
-        ]
-      interval: 10s
-      timeout: 10s
-      retries: 30
-      start_period: 60s
 
   setup:
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
@@ -135,58 +91,25 @@ services:
     volumes:
       - certs:/usr/share/elasticsearch/config/certs
     user: "root"
+    networks:
+      - elastic-pipeline
     command: >
       bash -c '
-        if [ x${ELASTIC_PASSWORD} == x ]; then
-          echo "Set the ELASTIC_PASSWORD environment variable in the .env file";
-          exit 1;
-        elif [ x${KIBANA_PASSWORD} == x ]; then
-          echo "Set the KIBANA_PASSWORD environment variable in the .env file";
-          exit 1;
-        fi;
-
         if [ ! -f config/certs/ca.zip ]; then
-          echo "Creating CA";
           bin/elasticsearch-certutil ca --silent --pem -out config/certs/ca.zip;
           unzip config/certs/ca.zip -d config/certs;
         fi;
-
         if [ ! -f config/certs/certs.zip ]; then
-          echo "Creating certs";
-          echo -ne \
-          "instances:\n"\
-          "  - name: es01\n"\
-          "    dns:\n"\
-          "      - es01\n"\
-          "      - localhost\n"\
-          "    ip:\n"\
-          "      - 127.0.0.1\n"\
-          "  - name: kibana\n"\
-          "    dns:\n"\
-          "      - kibana\n"\
-          "      - localhost\n"\
-          "    ip:\n"\
-          "      - 127.0.0.1\n"\
-          > config/certs/instances.yml;
+          echo -ne "instances:\n  - name: es01\n    dns:\n      - es01\n      - localhost\n  - name: kibana\n    dns:\n      - kibana\n      - localhost\n" > config/certs/instances.yml;
           bin/elasticsearch-certutil cert --silent --pem -out config/certs/certs.zip --in config/certs/instances.yml --ca-cert config/certs/ca/ca.crt --ca-key config/certs/ca/ca.key;
           unzip config/certs/certs.zip -d config/certs;
         fi;
-
-        echo "Setting file permissions"
         chown -R root:root config/certs;
-        find . -type d -exec chmod 750 \{\} \;;
-        find . -type f -exec chmod 640 \{\} \;;
-
-        echo "Waiting for Elasticsearch availability";
-        until curl -s --cacert config/certs/ca/ca.crt http://es01:9200 | grep -q "missing authentication credentials"; do sleep 30; done;
-
-        echo "Setting kibana_system password";
-        until curl -s -X POST --cacert config/certs/ca/ca.crt -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" http://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}" | grep -q "^{}"; do sleep 10; done;
-        
-        echo "All done!";
+        until curl -s http://es01:9200 | grep -q "missing authentication credentials"; do sleep 5; done;
+        curl -s -X POST -u "elastic:${ELASTIC_PASSWORD}" -H "Content-Type: application/json" http://es01:9200/_security/user/kibana_system/_password -d "{\"password\":\"${KIBANA_PASSWORD}\"}"
       '
     healthcheck:
-      test: ["CMD-SHELL", "[ -f config/certs/es01/es01.crt ]"]
+      test: ["CMD-SHELL", "[ -f config/certs/ca/ca.crt ]"]
       interval: 1s
       timeout: 5s
       retries: 120
@@ -207,23 +130,10 @@ services:
       - cluster.name=${CLUSTER_NAME}
       - discovery.type=single-node
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
-      - bootstrap.memory_lock=true
       - xpack.security.enabled=true
       - xpack.security.http.ssl.enabled=false
-      - xpack.security.http.ssl.key=certs/es01/es01.key
-      - xpack.security.http.ssl.certificate=certs/es01/es01.crt
-      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
-      - xpack.security.transport.ssl.enabled=false
-      - xpack.security.transport.ssl.key=certs/es01/es01.key
-      - xpack.security.transport.ssl.certificate=certs/es01/es01.crt
-      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
-      - xpack.security.transport.ssl.verification_mode=certificate
-      - xpack.license.self_generated.type=${LICENSE}
-    mem_limit: ${ES_MEM_LIMIT}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+    networks:
+      - elastic-pipeline
     healthcheck:
       test:
         [
@@ -233,8 +143,6 @@ services:
       interval: 10s
       timeout: 10s
       retries: 120
-    networks:
-      - elastic-pipeline
 
   kibana:
     depends_on:
@@ -252,20 +160,8 @@ services:
       - ELASTICSEARCH_HOSTS=http://es01:9200
       - ELASTICSEARCH_USERNAME=kibana_system
       - ELASTICSEARCH_PASSWORD=${KIBANA_PASSWORD}
-      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
-      - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-      - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
-    mem_limit: ${KB_MEM_LIMIT}
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
-        ]
-      interval: 10s
-      timeout: 10s
-      retries: 120
+    networks:
+      - elastic-pipeline
 
   connector-setup:
     image: curlimages/curl:latest
@@ -273,6 +169,8 @@ services:
     depends_on:
       - kafka-connect
       - es01
+    networks:
+      - elastic-pipeline
     volumes:
       - ./create-es-sink-connector.json:/config/create-es-sink-connector.json
       - ./create-es-index.json:/config/create-es-index.json
@@ -280,32 +178,7 @@ services:
     command:
       - -c
       - |
-        echo 'Waiting for Kafka Connect to be ready...'
-        while ! curl -s -f http://kafka-connect:8083/connectors > /dev/null 2>&1; do
-          echo 'Kafka Connect not ready yet, waiting...'
-          sleep 5
-        done
-        echo 'Kafka Connect is ready!'
+        while ! curl -s -f http://kafka-connect:8083/connectors > /dev/null 2>&1; do sleep 5; done
         sleep 10
-
-        echo 'Creating Elasticsearch index...'
-        curl -X PUT 'http://es01:9200/events' \
-          -H 'Content-Type: application/json' \
-          -u elastic:changeme \
-          -k \
-          --data-binary @/config/create-es-index.json || true
-
-        echo 'Creating Elasticsearch sink connector...'
-        curl -X POST http://kafka-connect:8083/connectors \
-          -H 'Content-Type: application/json' \
-          --data-binary @/config/create-es-sink-connector.json
-
-        echo 'Checking connector status...'
-        curl http://kafka-connect:8083/connectors/es-sink-test/status
-
-        echo 'Pipeline setup complete!'
-    restart: "no"
-
-networks:
-  elastic-pipeline:
-    driver: bridge
+        curl -X PUT 'http://es01:9200/events' -H 'Content-Type: application/json' -u elastic:changeme --data-binary @/config/create-es-index.json || true
+        curl -X POST http://kafka-connect:8083/connectors -H 'Content-Type: application/json' --data-binary @/config/create-es-sink-connector.json

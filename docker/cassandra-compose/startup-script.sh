@@ -28,8 +28,9 @@ sleep 5
 
 echo "All checks passed! Starting Debezium connector..."
 
-# Run Debezium with the necessary Java 17 opens
-java -Dlog4j.debug -Dlog4j.configuration=file:$DEBEZIUM_HOME/log4j.properties \
+# 1. Removed the -javaagent from here (running as standalone JAR)
+# 2. Corrected JAR name to match your Dockerfile (debezium-connector-cassandra.jar)
+java -Dlog4j.debug -Dlog4j.configuration=file:/debezium/log4j.properties \
   --add-exports java.base/jdk.internal.misc=ALL-UNNAMED \
   --add-exports java.base/jdk.internal.ref=ALL-UNNAMED \
   --add-exports java.base/sun.nio.ch=ALL-UNNAMED \
@@ -37,9 +38,7 @@ java -Dlog4j.debug -Dlog4j.configuration=file:$DEBEZIUM_HOME/log4j.properties \
   --add-opens java.base/java.lang=ALL-UNNAMED \
   --add-opens java.base/java.util=ALL-UNNAMED \
   --add-opens java.base/java.lang.reflect=ALL-UNNAMED \
-  -jar $DEBEZIUM_HOME/debezium-connector-cassandra.jar $DEBEZIUM_HOME/debezium-agent.properties &
+  -jar /debezium/debezium-connector-cassandra.jar /debezium/debezium-agent.properties &
 
-# IMPORTANT: This keeps the container running
-echo "Debezium started. Streaming logs to keep container alive..."
-# This will stream the Cassandra system log to the docker logs and NEVER exit
+echo "Debezium started. Streaming logs..."
 tail -f /var/log/cassandra/system.log

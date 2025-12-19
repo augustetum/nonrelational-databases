@@ -45,6 +45,10 @@ services:
       - "8083:8083"
     environment:
       CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
+      # Ensure this exact path is set:
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      # Add this to help us debug if it crashes again
+      KAFKA_LOG4J_LOGGERS: org.apache.kafka.connect.runtime.isolation=DEBUG
       CONNECT_REST_PORT: 8083
       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
       CONNECT_GROUP_ID: "kafka-connect-group"
@@ -56,7 +60,6 @@ services:
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
       CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
       CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
     user: root
     command:
       - bash
@@ -93,9 +96,26 @@ services:
 
   cassandra:
     image: custom-cassandra:latest
-    container_name: cassandra
+    networks:
+      - elastic-pipeline
+    environment:
+      # REMOVE JVM_EXTRA_OPTS (The script handles Debezium now)
+
+      - JAVA_TOOL_OPTIONS="-Dbootstrap.servers=kafka:9092 -Dkafka.producer.bootstrap.servers=kafka:9092"
+      - >-
+        JDK_JAVA_OPTIONS=
+        --add-opens java.base/java.io=ALL-UNNAMED
+        --add-opens java.base/java.util=ALL-UNNAMED
+        --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+        --add-opens java.base/java.lang=ALL-UNNAMED
+        --add-opens java.base/math=ALL-UNNAMED
+        --add-opens java.base/nio=ALL-UNNAMED
+        --add-opens java.base/sun.nio.ch=ALL-UNNAMED
+        --add-opens java.base/sun.util.calendar=ALL-UNNAMED
     volumes:
       - cassandra_data:/var/lib/cassandra
+      # REMOVE the volume mount for the JAR here since it is already inside the image
+      - ./debezium-agent.properties:/debezium/debezium-agent.properties
     ports:
       - "9042:9042"
     healthcheck:

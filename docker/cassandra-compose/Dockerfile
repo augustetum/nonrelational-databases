@@ -22,4 +22,4 @@ USER cassandra
 RUN mkdir -p $DEBEZIUM_HOME/relocation/archive $DEBEZIUM_HOME/relocation/error
 
 # Override the default entrypoint to run our custom startup script
-ENTRYPOINT ["/debezium/startup-script.sh"]
+ENTRYPOINT ["/debezium/startup-script.sh", "/debezium/debezium-agent.properties"]

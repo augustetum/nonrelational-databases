@@ -108,6 +108,7 @@ public class EventLogRepository {
                 event.getUserId(),
                 event.getDetails());
 
+        System.out.println("Writing to: " + session.getMetadata().getNodes().values());
         session.execute(userBound);
         session.execute(timeBound);
         session.execute(entityBound);
